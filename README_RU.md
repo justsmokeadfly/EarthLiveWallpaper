@@ -1,15 +1,15 @@
-# 🌍 EarthLive
+# 🌍 EarthLive Wallpaper v1.1.0
 
 > Лёгкое приложение для Windows, которое превращает свежие спутниковые снимки Земли Himawari-8/9 в живые обои рабочего стола.
 
 **🇬🇧 [English](README.md) · 🇷🇺 Русская версия**
 
-[![CI](https://github.com/justsmokeadfly/EarthLive/actions/workflows/ci.yml/badge.svg)](https://github.com/justsmokeadfly/EarthLive/actions/workflows/ci.yml)
-[![Windows](https://img.shields.io/badge/Windows-10%2F11-0078D4?style=flat-square)](https://github.com/justsmokeadfly/EarthLive)
+[![CI](https://github.com/justsmokeadfly/EarthLiveWallpaper/actions/workflows/ci.yml/badge.svg)](https://github.com/justsmokeadfly/EarthLiveWallpaper/actions/workflows/ci.yml)
+[![Windows](https://img.shields.io/badge/Windows-10%2F11-0078D4?style=flat-square)](https://github.com/justsmokeadfly/EarthLiveWallpaper)
 [![Python](https://img.shields.io/badge/Python-3.11%2B-3776AB?style=flat-square&logo=python&logoColor=white)](https://www.python.org/)
 [![License](https://img.shields.io/badge/license-MIT-green?style=flat-square)](LICENSE)
 
-EarthLive автоматически получает самый свежий доступный снимок Himawari, скачивает необходимые тайлы, собирает их в полноценное изображение диска Земли и устанавливает его как обои Windows.
+**EarthLive Wallpaper v1.1.0** автоматически получает самый свежий доступный снимок Himawari, скачивает необходимые тайлы, собирает их в полноценное изображение диска Земли и устанавливает его как обои Windows.
 
 Программа работает в фоновом режиме и может находиться в системном трее, практически не мешая работе пользователя.
 
@@ -17,7 +17,7 @@ EarthLive автоматически получает самый свежий д
 
 Для готовых сборок **Python устанавливать не нужно**.
 
-Перейдите на страницу [GitHub Releases](https://github.com/justsmokeadfly/EarthLive/releases) и скачайте нужный вариант:
+Перейдите на страницу [GitHub Releases](https://github.com/justsmokeadfly/EarthLiveWallpaper/releases) и скачайте нужный вариант:
 
 - **Portable ZIP** — распакуйте архив в любую папку и запустите `EarthLive.exe`.
 - **Windows Installer** — обычная установка с меню «Пуск», дополнительным ярлыком на рабочем столе и возможностью автозапуска Windows.
@@ -44,7 +44,7 @@ EarthLive автоматически получает самый свежий д
 
 ## 🛰️ Как это работает
 
-1. EarthLive проверяет, наступило ли время обновления.
+1. EarthLive Wallpaper проверяет, наступило ли время обновления.
 2. Получает время последнего доступного снимка Himawari.
 3. Параллельно скачивает необходимые изображения-тайлы.
 4. Собирает тайлы в единое изображение Земли.
@@ -84,13 +84,13 @@ EarthLive автоматически получает самый свежий д
 
 ### Рекомендуемый способ — готовая сборка
 
-Скачайте **Portable ZIP** или **Windows Installer** со страницы [Releases](https://github.com/justsmokeadfly/EarthLive/releases).
+Скачайте **Portable ZIP** или **Windows Installer** со страницы [Releases](https://github.com/justsmokeadfly/EarthLiveWallpaper/releases).
 
 ### Запуск из исходников
 
 ```powershell
-git clone https://github.com/justsmokeadfly/EarthLive.git
-cd EarthLive
+git clone https://github.com/justsmokeadfly/EarthLiveWallpaper.git
+cd EarthLiveWallpaper
 python -m venv .venv
 .venv\\Scripts\\activate
 pip install -r requirements.txt
@@ -135,7 +135,7 @@ python main.py
 | `history_size` | Количество сохраняемых обоев | `10` |
 | `theme` | `dark`, `light` или `system` | `dark` |
 | `language` | `en` или `ru` | `ru` |
-| `autostart` | Запускать EarthLive вместе с Windows | `false` |
+| `autostart` | Запускать EarthLive Wallpaper вместе с Windows | `false` |
 | `wallpaper_mode` | `fill`, `fit`, `stretch`, `tile`, `center` или `span` | `fill` |
 | `retry_count` | Максимальное число повторных попыток для тайла | `3` |
 | `retry_delay_seconds` | Базовая задержка между повторными попытками | `5` |
@@ -147,10 +147,10 @@ python main.py
 ## 🏗️ Архитектура
 
 ```text
-EarthLive/
+EarthLiveWallpaper/
 ├── domain/             # Основные сущности и интерфейсы
 ├── application/        # Сценарии работы и планирование обновлений
-├── infrastructure/     # Спутниковые источники, загрузка, хранение и Win32
+├── infrastructure/    # Спутниковые источники, загрузка, хранение и Win32
 ├── ui/                 # Интерфейс CustomTkinter и системный трей
 ├── app.py              # Сборка и внедрение зависимостей
 ├── main.py             # Точка входа
@@ -185,20 +185,20 @@ python -m pytest -q
 
 ## 📄 Лицензия
 
-EarthLive распространяется по лицензии **MIT**. Подробности находятся в файле [LICENSE](LICENSE).
+EarthLive Wallpaper распространяется по лицензии **MIT**. Подробности находятся в файле [LICENSE](LICENSE).
 
 ## ℹ️ Дисклеймер
 
 Изображения Himawari-8/9 предоставляются Japan Meteorological Agency (JMA) / National Institute of Information and Communications Technology (NICT) для публичного просмотра в режиме, близком к реальному времени.
 
-EarthLive — независимый проект и **не связан с JMA или NICT и не поддерживается ими**.
+EarthLive Wallpaper — независимый проект и **не связан с JMA или NICT и не поддерживается ими**.
 
 ## 👤 Автор
 
 **justzef**
 
 - GitHub: https://github.com/justzef
-- Проект: https://github.com/justsmokeadfly/EarthLive
+- Проект: https://github.com/justsmokeadfly/EarthLiveWallpaper
 
 ---
 
