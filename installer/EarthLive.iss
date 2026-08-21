@@ -1,13 +1,11 @@
-; EarthLive Inno Setup installer script.
+; EarthLive Wallpaper Inno Setup installer.
 ;
-; Produces a proper Windows installer (EarthLive-Setup.exe) that installs
-; the app under Program Files, creates Start Menu / optional desktop
-; shortcuts, and registers an uninstaller in "Apps & features".
+; The release workflow injects the version from the Git tag before building.
 
 #define MyAppName "EarthLive"
-#define MyAppVersion "1.0.2"
+#define MyAppVersion "1.3.0"
 #define MyAppAuthor "justsmokeadfly"
-#define MyAppURL "https://github.com/justsmokeadfly/EarthLive"
+#define MyAppURL "https://github.com/justsmokeadfly/EarthLiveWallpaper"
 #define MyAppExeName "EarthLive.exe"
 
 [Setup]
