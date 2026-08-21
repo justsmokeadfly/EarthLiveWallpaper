@@ -1,11 +1,4 @@
-"""Application configuration loading, validation, and persistence.
-
-Configuration is stored as JSON (via orjson) under the platform-appropriate
-user config directory, resolved through ``platformdirs``. This module is
-part of the composition root layer: it knows about concrete storage
-mechanisms, but the resulting :class:`AppConfig` dataclass it produces is
-a pure domain object.
-"""
+"""Application configuration loading, validation, and persistence."""
 
 from __future__ import annotations
 
@@ -30,44 +23,14 @@ _CONFIG_FILENAME = "config.json"
 
 
 class ConfigPaths:
-    """Resolves all filesystem locations used by EarthLive.
+    """Resolves all filesystem locations used by EarthLive."""
 
-    Centralizing path resolution here means every other module asks this
-    class for a location rather than calling ``platformdirs`` directly,
-    which keeps path logic (and any future overrides via environment
-    variables) in exactly one place.
-    """
-
-    def __init__(
-        self,
-        override_config_path: Path | None = None,
-        portable: bool = False,
-    ) -> None:
-        """Initialize path resolution.
-
-        Args:
-            override_config_path: If provided, this exact path is used for
-                the config file instead of the platform default (used by
-                the ``--config`` CLI flag).
-            portable: If ``True``, all application data (config, state,
-                cache, wallpapers, logs) is stored in a single ``data``
-                folder next to the running executable/script instead of
-                the platform's per-user app data location. Useful for
-                running EarthLive from a USB drive or a folder you fully
-                control, with no traces left in ``%APPDATA%``.
-        """
+    def __init__(self, override_config_path: Path | None = None, portable: bool = False) -> None:
         self._override_config_path = override_config_path
         self._portable = portable
 
     @property
     def _portable_root(self) -> Path:
-        """Root folder used for all data when running in portable mode.
-
-        Resolves next to the frozen executable (PyInstaller build) or
-        next to this source file when running from source, then adds a
-        ``data`` subfolder so it doesn't mix with the application's own
-        code files.
-        """
         if getattr(sys, "frozen", False):
             base = Path(sys.executable).resolve().parent
         else:
@@ -76,14 +39,12 @@ class ConfigPaths:
 
     @property
     def data_dir(self) -> Path:
-        """Root directory for persistent application data."""
         if self._portable:
             return self._portable_root
         return Path(platformdirs.user_data_dir(_APP_NAME, _APP_AUTHOR))
 
     @property
     def config_dir(self) -> Path:
-        """Directory containing the configuration file."""
         if self._override_config_path is not None:
             return self._override_config_path.parent
         if self._portable:
@@ -92,33 +53,27 @@ class ConfigPaths:
 
     @property
     def config_file(self) -> Path:
-        """Full path to the configuration JSON file."""
         if self._override_config_path is not None:
             return self._override_config_path
         return self.config_dir / _CONFIG_FILENAME
 
     @property
     def state_file(self) -> Path:
-        """Full path to the persisted application state JSON file."""
         return self.data_dir / "state.json"
 
     @property
     def cache_dir(self) -> Path:
-        """Directory used to store downloaded tile files."""
         return self.data_dir / "cache"
 
     @property
     def wallpapers_dir(self) -> Path:
-        """Directory used to store assembled wallpaper history."""
         return self.data_dir / "wallpapers"
 
     @property
     def logs_dir(self) -> Path:
-        """Directory used to store rotating log files."""
         return self.data_dir / "logs"
 
     def ensure_directories(self) -> None:
-        """Create every directory this application needs, if missing."""
         for directory in (
             self.config_dir,
             self.data_dir,
@@ -130,7 +85,6 @@ class ConfigPaths:
 
 
 def _config_to_dict(config: AppConfig) -> dict[str, Any]:
-    """Convert an AppConfig into a JSON-serializable dict."""
     raw = asdict(config)
     raw["grid_size"] = config.grid_size.value
     raw["theme"] = config.theme.value
@@ -139,81 +93,90 @@ def _config_to_dict(config: AppConfig) -> dict[str, Any]:
     return raw
 
 
+def _safe_number(raw: dict[str, Any], key: str, fallback: float, minimum: float) -> float:
+    try:
+        value = float(raw.get(key, fallback))
+    except (TypeError, ValueError):
+        _logger.warning("Invalid %s in config; using default.", key)
+        return fallback
+    if value < minimum:
+        _logger.warning("Invalid %s=%s in config; using default.", key, value)
+        return fallback
+    return value
+
+
+def _safe_int(raw: dict[str, Any], key: str, fallback: int, minimum: int) -> int:
+    try:
+        value = int(raw.get(key, fallback))
+    except (TypeError, ValueError):
+        _logger.warning("Invalid %s in config; using default.", key)
+        return fallback
+    if value < minimum:
+        _logger.warning("Invalid %s=%s in config; using default.", key, value)
+        return fallback
+    return value
+
+
+def _safe_bool(raw: dict[str, Any], key: str, fallback: bool) -> bool:
+    value = raw.get(key, fallback)
+    if isinstance(value, bool):
+        return value
+    if isinstance(value, str):
+        normalized = value.strip().lower()
+        if normalized in {"true", "1", "yes", "on"}:
+            return True
+        if normalized in {"false", "0", "no", "off"}:
+            return False
+    _logger.warning("Invalid %s in config; using default.", key)
+    return fallback
+
+
 def _dict_to_config(raw: dict[str, Any]) -> AppConfig:
-    """Build an AppConfig from a raw dict, falling back to defaults for any
-    missing or invalid field rather than raising.
-
-    Args:
-        raw: The parsed JSON content.
-
-    Returns:
-        A fully populated, validated AppConfig.
-    """
+    """Build a validated AppConfig, falling back per field when needed."""
     defaults = AppConfig()
 
-    def _get(key: str, fallback: Any) -> Any:
-        return raw.get(key, fallback)
-
     try:
-        grid_size = GridSize.from_string(str(_get("grid_size", defaults.grid_size.value)))
+        grid_size = GridSize.from_string(str(raw.get("grid_size", defaults.grid_size.value)))
     except ValueError:
         _logger.warning("Invalid grid_size in config; using default.")
         grid_size = defaults.grid_size
 
     try:
-        theme = Theme.from_string(str(_get("theme", defaults.theme.value)))
+        theme = Theme.from_string(str(raw.get("theme", defaults.theme.value)))
     except ValueError:
         _logger.warning("Invalid theme in config; using default.")
         theme = defaults.theme
 
     try:
-        wallpaper_mode = WallpaperMode.from_string(
-            str(_get("wallpaper_mode", defaults.wallpaper_mode.value))
-        )
+        wallpaper_mode = WallpaperMode.from_string(str(raw.get("wallpaper_mode", defaults.wallpaper_mode.value)))
     except ValueError:
         _logger.warning("Invalid wallpaper_mode in config; using default.")
         wallpaper_mode = defaults.wallpaper_mode
 
     try:
-        language = Language.from_string(str(_get("language", defaults.language.value)))
+        language = Language.from_string(str(raw.get("language", defaults.language.value)))
     except ValueError:
         _logger.warning("Invalid language in config; using default.")
         language = defaults.language
 
     return AppConfig(
-        provider=str(_get("provider", defaults.provider)),
+        provider=str(raw.get("provider", defaults.provider)),
         grid_size=grid_size,
-        check_interval_hours=float(
-            _get("check_interval_hours", defaults.check_interval_hours)
-        ),
-        history_size=int(_get("history_size", defaults.history_size)),
+        check_interval_hours=_safe_number(raw, "check_interval_hours", defaults.check_interval_hours, 0.01),
+        history_size=_safe_int(raw, "history_size", defaults.history_size, 1),
         theme=theme,
-        autostart=bool(_get("autostart", defaults.autostart)),
+        autostart=_safe_bool(raw, "autostart", defaults.autostart),
         wallpaper_mode=wallpaper_mode,
-        retry_count=int(_get("retry_count", defaults.retry_count)),
-        retry_delay_seconds=float(
-            _get("retry_delay_seconds", defaults.retry_delay_seconds)
-        ),
-        max_cache_age_hours=float(
-            _get("max_cache_age_hours", defaults.max_cache_age_hours)
-        ),
-        max_cache_size_mb=int(_get("max_cache_size_mb", defaults.max_cache_size_mb)),
+        retry_count=_safe_int(raw, "retry_count", defaults.retry_count, 0),
+        retry_delay_seconds=_safe_number(raw, "retry_delay_seconds", defaults.retry_delay_seconds, 0.0),
+        max_cache_age_hours=_safe_number(raw, "max_cache_age_hours", defaults.max_cache_age_hours, 0.01),
+        max_cache_size_mb=_safe_int(raw, "max_cache_size_mb", defaults.max_cache_size_mb, 1),
         language=language,
-        paused=bool(_get("paused", defaults.paused)),
+        paused=_safe_bool(raw, "paused", defaults.paused),
     )
 
 
 def load_config(paths: ConfigPaths) -> AppConfig:
-    """Load configuration from disk, creating a default file if absent.
-
-    Args:
-        paths: Resolved application paths.
-
-    Returns:
-        The loaded (or newly created default) AppConfig. Malformed
-        individual fields fall back to defaults rather than failing the
-        whole load.
-    """
     config_file = paths.config_file
     if not config_file.exists():
         _logger.info("No existing config found at %s; creating defaults.", config_file)
@@ -222,29 +185,20 @@ def load_config(paths: ConfigPaths) -> AppConfig:
         return default_config
 
     try:
-        raw_bytes = config_file.read_bytes()
-        raw = orjson.loads(raw_bytes)
+        raw = orjson.loads(config_file.read_bytes())
         if not isinstance(raw, dict):
             raise ValueError("Config file does not contain a JSON object.")
         return _dict_to_config(raw)
     except Exception:
-        _logger.exception(
-            "Failed to read config at %s; falling back to defaults.", config_file
-        )
+        _logger.exception("Failed to read config at %s; falling back to defaults.", config_file)
         return AppConfig()
 
 
 def save_config(paths: ConfigPaths, config: AppConfig) -> None:
-    """Persist configuration to disk atomically.
-
-    Args:
-        paths: Resolved application paths.
-        config: The configuration to persist.
-    """
+    """Persist configuration to disk atomically."""
     paths.config_dir.mkdir(parents=True, exist_ok=True)
     config_file = paths.config_file
     tmp_file = config_file.with_suffix(".tmp")
-
     try:
         payload = orjson.dumps(_config_to_dict(config), option=orjson.OPT_INDENT_2)
         tmp_file.write_bytes(payload)
