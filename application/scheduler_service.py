@@ -30,13 +30,6 @@ class SchedulerService:
     """
 
     def __init__(self, update_callback: Callable[[bool], UpdateResult]) -> None:
-        """Initialize the scheduler.
-
-        Args:
-            update_callback: Called to perform one update cycle. Receives
-                a single ``force: bool`` argument (``True`` for manual
-                triggers) and returns an UpdateResult.
-        """
         self._update_callback = update_callback
         self._scheduler = schedule.Scheduler()
         self._thread: threading.Thread | None = None
@@ -48,15 +41,7 @@ class SchedulerService:
         self._pending_force: bool = False
 
     def start(self, check_interval_hours: float, run_immediately: bool = False) -> None:
-        """Start the background scheduling thread.
-
-        Args:
-            check_interval_hours: Hours between automatic update checks.
-            run_immediately: If ``True``, perform one update cycle right
-                away instead of waiting for the first interval to elapse.
-                The default is ``False`` so launching EarthLive never
-                changes the wallpaper automatically.
-        """
+        """Start the background scheduling thread."""
         if self._thread is not None and self._thread.is_alive():
             _logger.warning("Scheduler already running; ignoring start() call.")
             return
@@ -82,6 +67,7 @@ class SchedulerService:
     def stop(self) -> None:
         """Stop the background scheduling thread and wait for it to exit."""
         self._stop_event.set()
+        self._trigger_event.set()
         if self._thread is not None:
             self._thread.join(timeout=5.0)
         _logger.info("Scheduler stopped.")
@@ -89,11 +75,11 @@ class SchedulerService:
     def trigger_now(self, force: bool = True) -> None:
         """Request an immediate update cycle, independent of the schedule.
 
-        Args:
-            force: Passed through to the update callback; ``True`` bypasses
-                the "already up to date" short-circuit.
+        Multiple concurrent requests are safely coalesced; a forced request
+        always wins over a non-forced request while one is pending.
         """
-        self._pending_force = force
+        with self._lock:
+            self._pending_force = self._pending_force or force
         self._trigger_event.set()
 
     def get_next_run_at(self) -> datetime | None:
@@ -107,13 +93,14 @@ class SchedulerService:
             return self._last_result
 
     def _loop(self) -> None:
-        """Main background loop: polls both the schedule and manual
-        trigger requests until :meth:`stop` is called.
-        """
+        """Main background loop: polls both the schedule and manual triggers."""
         while not self._stop_event.is_set():
             if self._trigger_event.is_set():
                 self._trigger_event.clear()
-                self._run_update(force=self._pending_force)
+                with self._lock:
+                    force = self._pending_force
+                    self._pending_force = False
+                self._run_update(force=force)
             else:
                 self._scheduler.run_pending()
 
@@ -121,11 +108,9 @@ class SchedulerService:
             self._stop_event.wait(_POLL_INTERVAL_SECONDS)
 
     def _run_scheduled_update(self) -> None:
-        """Callback invoked by the ``schedule`` library on its own cadence."""
         self._run_update(force=False)
 
     def _run_update(self, force: bool) -> None:
-        """Execute the injected update callback and store its result."""
         try:
             result = self._update_callback(force)
         except Exception:  # noqa: BLE001 - scheduler must never die
@@ -136,9 +121,6 @@ class SchedulerService:
             self._last_result = result
 
     def _update_next_run(self) -> None:
-        """Refresh the cached "next run" time from the underlying
-        ``schedule`` library state.
-        """
         next_run = self._scheduler.next_run
         with self._lock:
             if next_run is not None:
