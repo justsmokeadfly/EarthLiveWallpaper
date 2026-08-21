@@ -4,6 +4,8 @@
 
 **🇬🇧 English · 🇷🇺 [Русская версия](README_RU.md)**
 
+[![Download Installer](https://img.shields.io/badge/⬇_Download-Installer-2ea44f?style=for-the-badge&logo=windows)](https://github.com/justsmokeadfly/EarthLiveWallpaper/releases/latest/download/EarthLive-Setup-Latest.exe)
+
 [![CI](https://github.com/justsmokeadfly/EarthLiveWallpaper/actions/workflows/ci.yml/badge.svg)](https://github.com/justsmokeadfly/EarthLiveWallpaper/actions/workflows/ci.yml)
 [![Platform](https://img.shields.io/badge/platform-Windows%2010%2F11-0078D4?style=flat-square)](https://github.com/justsmokeadfly/EarthLiveWallpaper)
 [![Python](https://img.shields.io/badge/Python-3.11%2B-3776AB?style=flat-square&logo=python&logoColor=white)](https://www.python.org/)
@@ -27,6 +29,8 @@ It is designed to stay lightweight, unobtrusive, and easy to configure while run
 ## ⬇️ Download for Windows
 
 **No Python installation is required for the packaged releases.**
+
+**[⬇️ Download Installer](https://github.com/justsmokeadfly/EarthLiveWallpaper/releases/latest/download/EarthLive-Setup-Latest.exe)** — recommended. Installs EarthLive Wallpaper to `C:\Program Files\EarthLive Wallpaper`.
 
 Download **EarthLive Wallpaper v1.3.1** from the [GitHub Releases](https://github.com/justsmokeadfly/EarthLiveWallpaper/releases) page.
 
