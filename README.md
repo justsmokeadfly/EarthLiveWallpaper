@@ -1,15 +1,15 @@
-# 🌍 EarthLive
+# 🌍 EarthLive Wallpaper v1.1.0
 
 > A lightweight Windows desktop application that turns near-real-time Himawari-8/9 satellite imagery into a live Earth wallpaper.
 
 **🇬🇧 English · 🇷🇺 [Русская версия](README_RU.md)**
 
-[![CI](https://github.com/justsmokeadfly/EarthLive/actions/workflows/ci.yml/badge.svg)](https://github.com/justsmokeadfly/EarthLive/actions/workflows/ci.yml)
-[![Platform](https://img.shields.io/badge/platform-Windows%2010%2F11-0078D4?style=flat-square)](https://github.com/justsmokeadfly/EarthLive)
+[![CI](https://github.com/justsmokeadfly/EarthLiveWallpaper/actions/workflows/ci.yml/badge.svg)](https://github.com/justsmokeadfly/EarthLiveWallpaper/actions/workflows/ci.yml)
+[![Platform](https://img.shields.io/badge/platform-Windows%2010%2F11-0078D4?style=flat-square)](https://github.com/justsmokeadfly/EarthLiveWallpaper)
 [![Python](https://img.shields.io/badge/Python-3.11%2B-3776AB?style=flat-square&logo=python&logoColor=white)](https://www.python.org/)
 [![License](https://img.shields.io/badge/license-MIT-green?style=flat-square)](LICENSE)
 
-EarthLive automatically downloads the latest available Himawari satellite tiles, assembles them into a full-disk Earth image, and sets it as your Windows wallpaper.
+EarthLive Wallpaper automatically downloads the latest available Himawari satellite tiles, assembles them into a full-disk Earth image, and sets it as your Windows wallpaper.
 
 It is designed to stay lightweight, unobtrusive, and easy to configure while running quietly in the system tray.
 
@@ -17,7 +17,7 @@ It is designed to stay lightweight, unobtrusive, and easy to configure while run
 
 **No Python installation is required for the packaged releases.**
 
-Download the latest version from the [GitHub Releases](https://github.com/justsmokeadfly/EarthLive/releases) page.
+Download **EarthLive Wallpaper v1.1.0** from the [GitHub Releases](https://github.com/justsmokeadfly/EarthLiveWallpaper/releases) page.
 
 - **Portable ZIP** — extract it anywhere and run `EarthLive.exe`.
 - **Windows Installer** — install EarthLive with Start Menu, optional desktop shortcut, and optional Windows startup integration.
@@ -44,7 +44,7 @@ Releases are built automatically by GitHub Actions from version tags.
 
 ## 🛰️ How it works
 
-1. EarthLive checks the configured update interval.
+1. EarthLive Wallpaper checks the configured update interval.
 2. It obtains the latest available Himawari image timestamp.
 3. Image tiles are downloaded concurrently.
 4. The tiles are assembled into a complete wallpaper.
@@ -55,10 +55,10 @@ Releases are built automatically by GitHub Actions from version tags.
 ## 🏗️ Architecture
 
 ```text
-EarthLive/
+EarthLiveWallpaper/
 ├── domain/             # Core entities and interfaces
 ├── application/        # Use cases and scheduling
-├── infrastructure/     # Satellite providers, downloader, storage, Win32
+├── infrastructure/    # Satellite providers, downloader, image assembly, Win32
 ├── ui/                 # CustomTkinter interface and system tray
 ├── app.py              # Dependency-injection composition root
 ├── main.py             # Application entry point
@@ -90,13 +90,13 @@ For running from source:
 
 ### Recommended: packaged release
 
-Download either the Portable ZIP or Windows Installer from [Releases](https://github.com/justsmokeadfly/EarthLive/releases).
+Download either the Portable ZIP or Windows Installer from [Releases](https://github.com/justsmokeadfly/EarthLiveWallpaper/releases).
 
 ### From source
 
 ```powershell
-git clone https://github.com/justsmokeadfly/EarthLive.git
-cd EarthLive
+git clone https://github.com/justsmokeadfly/EarthLiveWallpaper.git
+cd EarthLiveWallpaper
 python -m venv .venv
 .venv\\Scripts\\activate
 pip install -r requirements.txt
@@ -113,7 +113,7 @@ Portable mode stores configuration, state, cache, wallpapers, and logs in a `dat
 
 ## 🚀 Usage
 
-Start EarthLive normally:
+Start EarthLive Wallpaper normally:
 
 ```powershell
 python main.py
@@ -143,7 +143,7 @@ The default configuration file is:
 | `history_size` | Number of wallpapers retained | `10` |
 | `theme` | `dark`, `light`, or `system` | `dark` |
 | `language` | `en` or `ru` | `ru` |
-| `autostart` | Launch EarthLive with Windows | `false` |
+| `autostart` | Launch EarthLive Wallpaper with Windows | `false` |
 | `wallpaper_mode` | `fill`, `fit`, `stretch`, `tile`, `center`, or `span` | `fill` |
 | `retry_count` | Maximum retries per tile | `3` |
 | `retry_delay_seconds` | Base retry delay in seconds | `5` |
@@ -169,7 +169,7 @@ pyinstaller --clean --noconfirm EarthLive.spec
 
 The application is generated under `dist\\EarthLive\\EarthLive.exe`.
 
-The Windows installer script is located at `installer\\EarthLive.iss`.
+The Windows installer script is located in `installer\\EarthLive.iss`.
 
 ## 🧪 Testing
 
@@ -180,20 +180,20 @@ python -m pytest -q
 
 ## 📄 License
 
-EarthLive is released under the **MIT License**. See [LICENSE](LICENSE).
+EarthLive Wallpaper is released under the **MIT License**. See [LICENSE](LICENSE).
 
 ## ℹ️ Disclaimer
 
 Himawari-8/9 imagery is provided by the Japan Meteorological Agency (JMA) / National Institute of Information and Communications Technology (NICT) for near-real-time public viewing.
 
-EarthLive is an independent project and is **not affiliated with or endorsed by JMA or NICT**.
+EarthLive Wallpaper is an independent project and is **not affiliated with or endorsed by JMA or NICT**.
 
 ## 👤 Author
 
 **justzef**
 
 - GitHub: https://github.com/justzef
-- Project: https://github.com/justsmokeadfly/EarthLive
+- Project: https://github.com/justsmokeadfly/EarthLiveWallpaper
 
 ---
 
