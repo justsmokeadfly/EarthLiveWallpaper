@@ -7,7 +7,7 @@ on:
   workflow_dispatch:
     inputs:
       release_tag:
-        description: "Version tag to release (for example v1.3.2)"
+        description: "Version tag to release (for example v1.4.0)"
         required: true
         type: string
 
@@ -45,27 +45,18 @@ jobs:
       - name: Install dependencies
         run: python -m pip install -r requirements-dev.txt
 
-      - name: Ruff — hardened files
-        run: >-
-          python -m ruff check
-          config.py
-          application/scheduler_service.py
-          infrastructure/download/http_tile_downloader.py
-          tests/test_config_validation.py
-          tests/application/test_scheduler_service.py
-          tests/infrastructure/test_http_tile_downloader.py
+      - name: Ruff — full repository
+        run: python -m ruff check . --output-format=concise
 
-      - name: Mypy — hardened files
+      - name: Ruff — security rules
+        run: python -m ruff check . --select S --output-format=concise
+
+      - name: Mypy — full repository
         run: >-
           python -m mypy
           --ignore-missing-imports
           --follow-imports=skip
-          config.py
-          application/scheduler_service.py
-          infrastructure/download/http_tile_downloader.py
-          tests/test_config_validation.py
-          tests/application/test_scheduler_service.py
-          tests/infrastructure/test_http_tile_downloader.py
+          .
 
       - name: Run tests
         run: python -m pytest -q
@@ -137,12 +128,15 @@ jobs:
             - `EarthLive.exe` — standalone executable
 
             ### Release validation
-            - Ruff lint
-            - mypy type-check
+            - Ruff lint — full repository
+            - Ruff security rules
+            - mypy type-check — full repository
             - pytest
             - PyInstaller build verification
             - Portable ZIP verification
             - Inno Setup installer verification
+
+            > Windows code signing is intentionally not included in this release.
           files: |
             dist/EarthLive/EarthLive.exe
             EarthLive-${{ env.RELEASE_VERSION }}-windows-x64-portable.zip
