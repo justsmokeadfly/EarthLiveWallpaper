@@ -4,6 +4,8 @@
 
 **🇬🇧 [English](README.md) · 🇷🇺 Русская версия**
 
+[![⬇ Скачать установщик](https://img.shields.io/badge/⬇_Скачать-установщик-2ea44f?style=for-the-badge&logo=windows)](https://github.com/justsmokeadfly/EarthLiveWallpaper/releases/latest/download/EarthLive-Setup-Latest.exe)
+
 [![CI](https://github.com/justsmokeadfly/EarthLiveWallpaper/actions/workflows/ci.yml/badge.svg)](https://github.com/justsmokeadfly/EarthLiveWallpaper/actions/workflows/ci.yml)
 [![Windows](https://img.shields.io/badge/Windows-10%2F11-0078D4?style=flat-square)](https://github.com/justsmokeadfly/EarthLiveWallpaper)
 [![Python](https://img.shields.io/badge/Python-3.11%2B-3776AB?style=flat-square&logo=python&logoColor=white)](https://www.python.org/)
@@ -27,6 +29,8 @@
 ## ⬇️ Скачать для Windows
 
 Для готовых сборок **Python устанавливать не нужно**.
+
+**[⬇️ Скачать установщик](https://github.com/justsmokeadfly/EarthLiveWallpaper/releases/latest/download/EarthLive-Setup-Latest.exe)** — рекомендуется. Устанавливает EarthLive Wallpaper в `C:\Program Files\EarthLive Wallpaper`.
 
 Перейдите на страницу [GitHub Releases](https://github.com/justsmokeadfly/EarthLiveWallpaper/releases) и скачайте нужный вариант:
 
@@ -97,7 +101,7 @@
 
 ### Рекомендуемый способ — Windows Installer
 
-Скачайте **Windows Installer** со страницы [Releases](https://github.com/justsmokeadfly/EarthLiveWallpaper/releases). По умолчанию программа устанавливается в:
+Скачайте **Windows Installer** со страницы [Releases](https://github.com/justsmokeadfly/EarthLiveWallpaper/releases) или нажмите кнопку **«Скачать установщик»** вверху README. По умолчанию программа устанавливается в:
 
 ```text
 C:\Program Files\EarthLive Wallpaper
