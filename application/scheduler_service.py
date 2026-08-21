@@ -10,9 +10,8 @@ the ``--update-now`` CLI flag.
 from __future__ import annotations
 
 import threading
-import time
 from collections.abc import Callable
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timezone
 
 import schedule
 
