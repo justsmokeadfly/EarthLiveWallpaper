@@ -1,4 +1,4 @@
-# 🌍 EarthLive Wallpaper v1.2.0
+# 🌍 EarthLive Wallpaper v1.3.0
 
 > A lightweight Windows desktop application that turns near-real-time Himawari-8/9 satellite imagery into a live Earth wallpaper.
 
@@ -9,20 +9,30 @@
 [![Python](https://img.shields.io/badge/Python-3.11%2B-3776AB?style=flat-square&logo=python&logoColor=white)](https://www.python.org/)
 [![License](https://img.shields.io/badge/license-MIT-green?style=flat-square)](LICENSE)
 
-EarthLive Wallpaper automatically downloads the latest available Himawari satellite tiles, assembles them into a full-disk Earth image, and sets it as your Windows wallpaper.
+EarthLive Wallpaper automatically downloads the latest available Himawari satellite tiles, validates them, assembles them into a full-disk Earth image, and sets it as your Windows wallpaper.
 
 It is designed to stay lightweight, unobtrusive, and easy to configure while running quietly in the system tray.
+
+## ✨ What's improved in v1.3.0
+
+- 🔒 Downloaded tiles are checked for valid image content, supported Content-Type, and safe size limits.
+- ⚙️ Configuration values are validated and invalid values fall back safely to defaults.
+- 🧵 Manual scheduler triggers are thread-safe and concurrent requests are safely coalesced.
+- 🧪 CI now gates changes with Ruff, mypy, and pytest.
+- 📦 Windows releases are driven by the Git tag, eliminating version mismatches between ZIP, EXE, and Installer.
+- 🪟 Installer metadata and project URLs are aligned with the current repository.
+- 💾 Application state and configuration use atomic writes.
 
 ## ⬇️ Download for Windows
 
 **No Python installation is required for the packaged releases.**
 
-Download **EarthLive Wallpaper v1.2.0** from the [GitHub Releases](https://github.com/justsmokeadfly/EarthLiveWallpaper/releases) page.
+Download **EarthLive Wallpaper v1.3.0** from the [GitHub Releases](https://github.com/justsmokeadfly/EarthLiveWallpaper/releases) page.
 
 - **Portable ZIP** — extract it anywhere and run `EarthLive.exe`.
 - **Windows Installer** — install EarthLive with Start Menu, optional desktop shortcut, and optional Windows startup integration.
 
-Releases are built automatically by GitHub Actions from version tags.
+Releases are built automatically by GitHub Actions from semantic version tags such as `v1.3.0`. Each release is validated with linting, type checking, tests, PyInstaller, and installer checks.
 
 ## 👤 Author
 
