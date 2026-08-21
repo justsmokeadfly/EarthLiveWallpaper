@@ -3,22 +3,28 @@ name: Windows Release
 on:
   push:
     tags:
-      - "v*"
+      - "v*.*.*"
   workflow_dispatch:
 
 permissions:
   contents: write
 
-env:
-  RELEASE_VERSION: "1.2.0"
-
 jobs:
   release:
     runs-on: windows-latest
+    env:
+      RELEASE_VERSION: ${{ github.ref_name }}
 
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+
+      - name: Validate release tag
+        shell: pwsh
+        run: |
+          if ("${{ github.ref_type }}" -ne "tag") { throw "Windows Release must be run from a version tag (vX.Y.Z)." }
+          if ("${{ github.ref_name }}" -notmatch '^v\d+\.\d+\.\d+$') { throw "Invalid release tag: ${{ github.ref_name }}" }
+          "RELEASE_VERSION=$($env:RELEASE_VERSION.TrimStart('v'))" >> $env:GITHUB_ENV
 
       - name: Set up Python
         uses: actions/setup-python@v5
@@ -29,6 +35,12 @@ jobs:
       - name: Install dependencies
         run: python -m pip install -r requirements-dev.txt
 
+      - name: Lint with Ruff
+        run: python -m ruff check .
+
+      - name: Type-check with mypy
+        run: python -m mypy --ignore-missing-imports .
+
       - name: Run tests
         run: python -m pytest -q
 
@@ -38,13 +50,20 @@ jobs:
       - name: Verify EarthLive.exe
         shell: pwsh
         run: |
-          if (-not (Test-Path "dist/EarthLive/EarthLive.exe")) {
-            throw "EarthLive.exe was not created by PyInstaller."
-          }
+          $exe = "dist/EarthLive/EarthLive.exe"
+          if (-not (Test-Path $exe)) { throw "EarthLive.exe was not created by PyInstaller." }
+          if ((Get-Item $exe).Length -lt 1MB) { throw "EarthLive.exe looks suspiciously small." }
 
       - name: Create portable ZIP
         shell: pwsh
-        run: Compress-Archive -Path "dist/EarthLive/*" -DestinationPath "EarthLive-${{ env.RELEASE_VERSION }}-windows-x64-portable.zip"
+        run: Compress-Archive -Path "dist/EarthLive/*" -DestinationPath "EarthLive-$env:RELEASE_VERSION-windows-x64-portable.zip"
+
+      - name: Verify Portable ZIP
+        shell: pwsh
+        run: |
+          $zip = "EarthLive-$env:RELEASE_VERSION-windows-x64-portable.zip"
+          if (-not (Test-Path $zip)) { throw "Portable ZIP was not created." }
+          if ((Get-Item $zip).Length -lt 1MB) { throw "Portable ZIP looks suspiciously small." }
 
       - name: Install Inno Setup
         shell: pwsh
@@ -53,11 +72,9 @@ jobs:
       - name: Set installer version
         shell: pwsh
         run: |
-          $version = "${{ env.RELEASE_VERSION }}"
           $path = "installer/EarthLive.iss"
           $content = Get-Content $path -Raw
-          $replacement = '#define MyAppVersion "' + $version + '"'
-          $content = $content -replace '#define MyAppVersion "[^"]+"', $replacement
+          $content = $content -replace '#define MyAppVersion "[^"]+"', ('#define MyAppVersion "' + $env:RELEASE_VERSION + '"')
           Set-Content -Path $path -Value $content -Encoding UTF8
 
       - name: Build installer
@@ -67,9 +84,9 @@ jobs:
       - name: Verify installer
         shell: pwsh
         run: |
-          if (-not (Test-Path "installer/output/EarthLive-Setup-${{ env.RELEASE_VERSION }}.exe")) {
-            throw "Installer was not created."
-          }
+          $installer = "installer/output/EarthLive-Setup-$env:RELEASE_VERSION.exe"
+          if (-not (Test-Path $installer)) { throw "Installer was not created." }
+          if ((Get-Item $installer).Length -lt 1MB) { throw "Installer looks suspiciously small." }
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
@@ -79,25 +96,20 @@ jobs:
           generate_release_notes: true
           name: EarthLive Wallpaper ${{ github.ref_name }}
           body: |
-            ## 🇬🇧 English
+            ## 🌍 EarthLive Wallpaper ${{ github.ref_name }}
 
-            ### EarthLive Wallpaper ${{ github.ref_name }}
+            ### Windows downloads
+            - `EarthLive.exe` — standalone executable
+            - `EarthLive-${{ env.RELEASE_VERSION }}-windows-x64-portable.zip` — Portable version
+            - `EarthLive-Setup-${{ env.RELEASE_VERSION }}.exe` — Windows Installer
 
-            - Updated release pipeline for v1.2.0.
-            - Automated pytest validation.
-            - Automated PyInstaller Windows build.
-            - Automated Portable ZIP creation.
-            - Automated Windows Installer creation.
-
-            ## 🇷🇺 Русский
-
-            ### EarthLive Wallpaper ${{ github.ref_name }}
-
-            - Обновлён pipeline сборки для v1.2.0.
-            - Автоматическая проверка через pytest.
-            - Автоматическая сборка Windows-программы через PyInstaller.
-            - Автоматическое создание Portable ZIP.
-            - Автоматическая сборка Windows Installer.
+            ### Release validation
+            - Ruff lint
+            - mypy type-check
+            - pytest
+            - PyInstaller build verification
+            - Portable ZIP verification
+            - Inno Setup installer verification
           files: |
             dist/EarthLive/EarthLive.exe
             EarthLive-${{ env.RELEASE_VERSION }}-windows-x64-portable.zip
