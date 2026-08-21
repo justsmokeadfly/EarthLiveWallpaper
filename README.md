@@ -1,4 +1,4 @@
-# 🌍 EarthLive Wallpaper v1.1.0
+# 🌍 EarthLive Wallpaper v1.2.0
 
 > A lightweight Windows desktop application that turns near-real-time Himawari-8/9 satellite imagery into a live Earth wallpaper.
 
@@ -17,7 +17,7 @@ It is designed to stay lightweight, unobtrusive, and easy to configure while run
 
 **No Python installation is required for the packaged releases.**
 
-Download **EarthLive Wallpaper v1.1.0** from the [GitHub Releases](https://github.com/justsmokeadfly/EarthLiveWallpaper/releases) page.
+Download **EarthLive Wallpaper v1.2.0** from the [GitHub Releases](https://github.com/justsmokeadfly/EarthLiveWallpaper/releases) page.
 
 - **Portable ZIP** — extract it anywhere and run `EarthLive.exe`.
 - **Windows Installer** — install EarthLive with Start Menu, optional desktop shortcut, and optional Windows startup integration.
@@ -190,9 +190,9 @@ EarthLive Wallpaper is an independent project and is **not affiliated with or en
 
 ## 👤 Author
 
-**justzef**
+**justsmokeadfly**
 
-- GitHub: https://github.com/justzef
+- GitHub: https://github.com/justsmokeadfly
 - Project: https://github.com/justsmokeadfly/EarthLiveWallpaper
 
 ---
