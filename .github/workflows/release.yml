@@ -2,16 +2,18 @@ name: Windows Release
 
 on:
   push:
-    branches:
-      - "release/v1.1"
     tags:
       - "v*"
+  workflow_dispatch:
 
 permissions:
   contents: write
 
 env:
-  RELEASE_VERSION: "1.1.0"
+  RELEASE_VERSION: "1.2.0"
+
+env:
+  RELEASE_VERSION: "1.2.0"
 
 jobs:
   release:
@@ -75,18 +77,16 @@ jobs:
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: v1.1.0
+          tag_name: ${{ github.ref_name }}
           target_commitish: ${{ github.sha }}
           generate_release_notes: true
-          name: EarthLive Wallpaper v1.1.0
+          name: EarthLive Wallpaper ${{ github.ref_name }}
           body: |
             ## 🇬🇧 English
 
-            ### EarthLive Wallpaper v1.1.0
+            ### EarthLive Wallpaper ${{ github.ref_name }}
 
-            First release of the clean EarthLive Wallpaper repository, based on the latest EarthLive codebase.
-
-            - Updated release pipeline for v1.1.0.
+            - Updated release pipeline for v1.2.0.
             - Automated pytest validation.
             - Automated PyInstaller Windows build.
             - Automated Portable ZIP creation.
@@ -94,11 +94,9 @@ jobs:
 
             ## 🇷🇺 Русский
 
-            ### EarthLive Wallpaper v1.1.0
+            ### EarthLive Wallpaper ${{ github.ref_name }}
 
-            Первый релиз нового репозитория EarthLive Wallpaper на основе актуального кода EarthLive.
-
-            - Обновлён pipeline сборки для v1.1.0.
+            - Обновлён pipeline сборки для v1.2.0.
             - Автоматическая проверка через pytest.
             - Автоматическая сборка Windows-программы через PyInstaller.
             - Автоматическое создание Portable ZIP.
