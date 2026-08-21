@@ -3,7 +3,7 @@ name: Windows Release
 on:
   push:
     branches:
-      - "release/v1.0.2"
+      - "release/v1.1"
     tags:
       - "v*"
 
@@ -11,7 +11,7 @@ permissions:
   contents: write
 
 env:
-  RELEASE_VERSION: "1.0.2"
+  RELEASE_VERSION: "1.1.0"
 
 jobs:
   release:
@@ -75,33 +75,34 @@ jobs:
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: v1.0.2
+          tag_name: v1.1.0
           target_commitish: ${{ github.sha }}
           generate_release_notes: true
+          name: EarthLive Wallpaper v1.1.0
           body: |
             ## 🇬🇧 English
 
-            ### EarthLive v1.0.2
+            ### EarthLive Wallpaper v1.1.0
 
-            #### Changes
-            - Added a Russian translation of the MIT License for the installer.
-            - When Russian is selected during installation, the license text is displayed in Russian.
-            - When English is selected, the original MIT License is displayed.
-            - Fixed startup behavior: wallpapers are not updated automatically when the application starts.
-            - Wallpapers can be updated manually with **Update now**.
-            - Scheduled updates remain available after startup.
+            First release of the clean EarthLive Wallpaper repository, based on the latest EarthLive codebase.
+
+            - Updated release pipeline for v1.1.0.
+            - Automated pytest validation.
+            - Automated PyInstaller Windows build.
+            - Automated Portable ZIP creation.
+            - Automated Windows Installer creation.
 
             ## 🇷🇺 Русский
 
-            ### EarthLive v1.0.2
+            ### EarthLive Wallpaper v1.1.0
 
-            #### Изменения
-            - Добавлен русский перевод лицензии MIT для установщика.
-            - При выборе русского языка во время установки текст лицензии отображается на русском.
-            - При выборе английского языка отображается оригинальная лицензия MIT.
-            - Исправлен запуск программы: при старте обои больше не обновляются автоматически.
-            - Обновление обоев можно выполнить вручную кнопкой **«Обновить сейчас»**.
-            - Плановые автоматические обновления после запуска сохраняются.
+            Первый релиз нового репозитория EarthLive Wallpaper на основе актуального кода EarthLive.
+
+            - Обновлён pipeline сборки для v1.1.0.
+            - Автоматическая проверка через pytest.
+            - Автоматическая сборка Windows-программы через PyInstaller.
+            - Автоматическое создание Portable ZIP.
+            - Автоматическая сборка Windows Installer.
           files: |
             dist/EarthLive/EarthLive.exe
             EarthLive-${{ env.RELEASE_VERSION }}-windows-x64-portable.zip
