@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import os
 import sys
+from contextlib import suppress
 from dataclasses import asdict
 from pathlib import Path
 from typing import Any
@@ -16,7 +17,6 @@ from domain.enums import GridSize, Language, Theme, WallpaperMode
 from logger import get_logger
 
 _logger = get_logger(__name__)
-
 _APP_NAME = "EarthLive"
 _APP_AUTHOR = "EarthLive"
 _CONFIG_FILENAME = "config.json"
@@ -134,31 +134,26 @@ def _safe_bool(raw: dict[str, Any], key: str, fallback: bool) -> bool:
 def _dict_to_config(raw: dict[str, Any]) -> AppConfig:
     """Build a validated AppConfig, falling back per field when needed."""
     defaults = AppConfig()
-
     try:
         grid_size = GridSize.from_string(str(raw.get("grid_size", defaults.grid_size.value)))
     except ValueError:
         _logger.warning("Invalid grid_size in config; using default.")
         grid_size = defaults.grid_size
-
     try:
         theme = Theme.from_string(str(raw.get("theme", defaults.theme.value)))
     except ValueError:
         _logger.warning("Invalid theme in config; using default.")
         theme = defaults.theme
-
     try:
         wallpaper_mode = WallpaperMode.from_string(str(raw.get("wallpaper_mode", defaults.wallpaper_mode.value)))
     except ValueError:
         _logger.warning("Invalid wallpaper_mode in config; using default.")
         wallpaper_mode = defaults.wallpaper_mode
-
     try:
         language = Language.from_string(str(raw.get("language", defaults.language.value)))
     except ValueError:
         _logger.warning("Invalid language in config; using default.")
         language = defaults.language
-
     return AppConfig(
         provider=str(raw.get("provider", defaults.provider)),
         grid_size=grid_size,
@@ -183,7 +178,6 @@ def load_config(paths: ConfigPaths) -> AppConfig:
         default_config = AppConfig()
         save_config(paths, default_config)
         return default_config
-
     try:
         raw = orjson.loads(config_file.read_bytes())
         if not isinstance(raw, dict):
@@ -195,7 +189,6 @@ def load_config(paths: ConfigPaths) -> AppConfig:
 
 
 def save_config(paths: ConfigPaths, config: AppConfig) -> None:
-    """Persist configuration to disk atomically."""
     paths.config_dir.mkdir(parents=True, exist_ok=True)
     config_file = paths.config_file
     tmp_file = config_file.with_suffix(".tmp")
@@ -206,7 +199,5 @@ def save_config(paths: ConfigPaths, config: AppConfig) -> None:
     except Exception:
         _logger.exception("Failed to save config to %s.", config_file)
         if tmp_file.exists():
-            try:
+            with suppress(OSError):
                 tmp_file.unlink()
-            except OSError:
-                pass
