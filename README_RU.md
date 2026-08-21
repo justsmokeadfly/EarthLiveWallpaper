@@ -1,4 +1,4 @@
-# 🌍 EarthLive Wallpaper v1.3.1
+# 🌍 EarthLive Wallpaper v1.3.2
 
 > Лёгкое приложение для Windows, которое превращает свежие спутниковые снимки Земли Himawari-8/9 в живые обои рабочего стола.
 
@@ -11,19 +11,20 @@
 [![Python](https://img.shields.io/badge/Python-3.11%2B-3776AB?style=flat-square&logo=python&logoColor=white)](https://www.python.org/)
 [![License](https://img.shields.io/badge/license-MIT-green?style=flat-square)](LICENSE)
 
-**EarthLive Wallpaper v1.3.1** автоматически получает самый свежий доступный снимок Himawari, проверяет скачанные тайлы, собирает их в полноценное изображение диска Земли и устанавливает его как обои Windows.
+**EarthLive Wallpaper v1.3.2** автоматически получает самый свежий доступный снимок Himawari, проверяет скачанные тайлы, собирает их в полноценное изображение диска Земли и устанавливает его как обои Windows.
 
 Программа работает в фоновом режиме и может находиться в системном трее, практически не мешая работе пользователя.
 
-## ✨ Что улучшено в v1.3.1
+## ✨ Что улучшено в v1.3.2
 
-- 📁 **Windows Installer теперь устанавливает EarthLive Wallpaper в `C:\Program Files\EarthLive Wallpaper`**, а не в пользовательский каталог AppData.
+- 🖼️ При новой установке **режим отображения обоев по умолчанию теперь FIT**, а не FILL — изображение Земли показывается полностью без обрезки.
+- 📁 **Windows Installer устанавливает EarthLive Wallpaper в `C:\Program Files\EarthLive Wallpaper`**, а не в пользовательский каталог AppData.
 - 🪟 Название **EarthLive Wallpaper** используется единообразно в установщике, меню «Пуск», ярлыке рабочего стола и интеграции с автозапуском.
 - 🔒 Скачанные тайлы проверяются на корректность изображения, Content-Type и безопасный размер.
 - ⚙️ Некорректные значения конфигурации автоматически заменяются безопасными значениями по умолчанию.
 - 🧵 Ручные обновления планировщика стали потокобезопасными; одновременные запросы корректно объединяются.
 - 🧪 CI проверяет Ruff, mypy и pytest.
-- 📦 Windows-релизы полностью привязаны к Git tag — версии EXE, ZIP и Installer больше не расходятся.
+- 📦 Windows-релизы привязаны к версияционным тегам и проходят проверки перед публикацией.
 - 💾 Конфигурация и состояние сохраняются атомарно.
 
 ## ⬇️ Скачать для Windows
@@ -32,18 +33,19 @@
 
 **[⬇️ Скачать установщик](https://github.com/justsmokeadfly/EarthLiveWallpaper/releases/latest/download/EarthLive-Setup-Latest.exe)** — рекомендуется. Устанавливает EarthLive Wallpaper в `C:\Program Files\EarthLive Wallpaper`.
 
-Перейдите на страницу [GitHub Releases](https://github.com/justsmokeadfly/EarthLiveWallpaper/releases) и скачайте нужный вариант:
+Перейдите на страницу [GitHub Releases](https://github.com/justsmokeadfly/EarthLiveWallpaper/releases) и скачайте нужный вариант.
 
 - **Windows Installer** — рекомендуется. Устанавливает EarthLive Wallpaper в `C:\Program Files\EarthLive Wallpaper`, добавляет программу в меню «Пуск» и позволяет создать ярлык на рабочем столе и включить автозапуск.
 - **Portable ZIP** — распакуйте архив в любую папку и запустите `EarthLive.exe` без установки.
 - **Standalone EXE** — отдельный готовый `EarthLive.exe`, который можно запустить напрямую.
 
-Сборки и релизы создаются автоматически через GitHub Actions из семантических тегов, например `v1.3.1`. Каждая Windows-сборка проходит линтинг, проверку типов, тесты, PyInstaller и проверки установщика.
+Сборки и релизы создаются автоматически через GitHub Actions из семантических тегов, например `v1.3.2`. Каждая Windows-сборка проходит линтинг, проверку типов, тесты, PyInstaller и проверки установщика.
 
 ## ✨ Возможности
 
 - 🛰️ Свежие спутниковые снимки **Himawari-8/9**
 - 🖥️ Автоматическая смена обоев Windows
+- 🖼️ Режим отображения обоев: **FIT** по умолчанию
 - ⚙️ Разрешение изображения: `2x2`, `4x4`, `8x8`, `16x16`
 - ⏱️ Настраиваемый интервал обновления
 - 🗂️ История предыдущих обоев и управление кэшем
@@ -163,7 +165,7 @@ python main.py
 | `theme` | `dark`, `light` или `system` | `dark` |
 | `language` | `en` или `ru` | `ru` |
 | `autostart` | Запускать EarthLive Wallpaper вместе с Windows | `false` |
-| `wallpaper_mode` | `fill`, `fit`, `stretch`, `tile`, `center` или `span` | `fill` |
+| `wallpaper_mode` | `fill`, `fit`, `stretch`, `tile`, `center` или `span` | `fit` |
 | `retry_count` | Максимальное число повторных попыток для тайла | `3` |
 | `retry_delay_seconds` | Базовая задержка между повторными попытками | `5` |
 | `max_cache_age_hours` | Максимальный возраст кэша | `168` |
