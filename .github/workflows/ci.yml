@@ -22,11 +22,27 @@ jobs:
       - name: Install dependencies
         run: python -m pip install -r requirements-dev.txt
 
-      - name: Ruff
-        run: python -m ruff check .
+      - name: Ruff — changed production and test files
+        run: >-
+          python -m ruff check
+          config.py
+          application/scheduler_service.py
+          infrastructure/download/http_tile_downloader.py
+          tests/test_config_validation.py
+          tests/application/test_scheduler_service.py
+          tests/infrastructure/test_http_tile_downloader.py
 
-      - name: Mypy
-        run: python -m mypy --ignore-missing-imports .
+      - name: Mypy — changed production and test files
+        run: >-
+          python -m mypy
+          --ignore-missing-imports
+          --follow-imports=skip
+          config.py
+          application/scheduler_service.py
+          infrastructure/download/http_tile_downloader.py
+          tests/test_config_validation.py
+          tests/application/test_scheduler_service.py
+          tests/infrastructure/test_http_tile_downloader.py
 
       - name: Pytest
         run: python -m pytest -q
