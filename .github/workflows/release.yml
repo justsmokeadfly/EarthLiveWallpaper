@@ -104,6 +104,12 @@ jobs:
           if (-not (Test-Path $installer)) { throw "Installer was not created." }
           if ((Get-Item $installer).Length -lt 1MB) { throw "Installer looks suspiciously small." }
 
+      - name: Create stable latest installer alias
+        shell: pwsh
+        run: |
+          $installer = "installer/output/EarthLive-Setup-$env:RELEASE_VERSION.exe"
+          Copy-Item $installer "installer/output/EarthLive-Setup-Latest.exe" -Force
+
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v3
         with:
@@ -115,9 +121,10 @@ jobs:
             ## 🌍 EarthLive Wallpaper ${{ github.ref_name }}
 
             ### Windows downloads
-            - `EarthLive.exe` — standalone executable
+            - `EarthLive-Setup-${{ env.RELEASE_VERSION }}.exe` — Windows Installer (versioned)
+            - `EarthLive-Setup-Latest.exe` — Windows Installer (stable download link)
             - `EarthLive-${{ env.RELEASE_VERSION }}-windows-x64-portable.zip` — Portable version
-            - `EarthLive-Setup-${{ env.RELEASE_VERSION }}.exe` — Windows Installer
+            - `EarthLive.exe` — standalone executable
 
             ### Release validation
             - Ruff lint
@@ -130,3 +137,4 @@ jobs:
             dist/EarthLive/EarthLive.exe
             EarthLive-${{ env.RELEASE_VERSION }}-windows-x64-portable.zip
             installer/output/EarthLive-Setup-${{ env.RELEASE_VERSION }}.exe
+            installer/output/EarthLive-Setup-Latest.exe
