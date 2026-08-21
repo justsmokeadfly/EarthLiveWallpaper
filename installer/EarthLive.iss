@@ -2,7 +2,7 @@
 ;
 ; The release workflow injects the version from the Git tag before building.
 
-#define MyAppName "EarthLive"
+#define MyAppName "EarthLive Wallpaper"
 #define MyAppVersion "1.3.0"
 #define MyAppAuthor "justsmokeadfly"
 #define MyAppURL "https://github.com/justsmokeadfly/EarthLiveWallpaper"
@@ -36,7 +36,7 @@ Name: "russian"; MessagesFile: "compiler:Languages\Russian.isl"; LicenseFile: ".
 
 [Tasks]
 Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{cm:AdditionalIcons}"; Flags: unchecked
-Name: "autostart"; Description: "Launch EarthLive automatically at Windows login"; GroupDescription: "Startup:"; Flags: unchecked
+Name: "autostart"; Description: "Launch EarthLive Wallpaper automatically at Windows login"; GroupDescription: "Startup:"; Flags: unchecked
 
 [Files]
 Source: "..\dist\EarthLive\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
@@ -48,7 +48,7 @@ Name: "{autodesktop}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"; Tasks: de
 
 [Registry]
 Root: HKCU; Subkey: "Software\Microsoft\Windows\CurrentVersion\Run"; \
-    ValueType: string; ValueName: "EarthLive"; \
+    ValueType: string; ValueName: "EarthLive Wallpaper"; \
     ValueData: """{app}\{#MyAppExeName}"" --headless"; \
     Tasks: autostart; Flags: uninsdeletevalue
 
@@ -56,4 +56,4 @@ Root: HKCU; Subkey: "Software\Microsoft\Windows\CurrentVersion\Run"; \
 Filename: "{app}\{#MyAppExeName}"; Description: "{cm:LaunchProgram,{#MyAppName}}"; Flags: nowait postinstall skipifsilent
 
 [UninstallDelete]
-Type: filesandordirs; Name: "{userappdata}\EarthLive\cache"
+Type: filesandordirs; Name: "{userappdata}\EarthLive Wallpaper\cache"
