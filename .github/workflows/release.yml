@@ -5,6 +5,11 @@ on:
     tags:
       - "v*.*.*"
   workflow_dispatch:
+    inputs:
+      release_tag:
+        description: "Version tag to release (for example v1.3.2)"
+        required: true
+        type: string
 
 permissions:
   contents: write
@@ -13,18 +18,23 @@ jobs:
   release:
     runs-on: windows-latest
     env:
-      RELEASE_VERSION: ${{ github.ref_name }}
+      RELEASE_TAG: ${{ github.event_name == 'workflow_dispatch' && inputs.release_tag || github.ref_name }}
 
     steps:
-      - name: Checkout
-        uses: actions/checkout@v6
-
       - name: Validate release tag
         shell: pwsh
         run: |
-          if ("${{ github.ref_type }}" -ne "tag") { throw "Windows Release must be run from a version tag (vX.Y.Z)." }
-          if ("${{ github.ref_name }}" -notmatch '^v\d+\.\d+\.\d+$') { throw "Invalid release tag: ${{ github.ref_name }}" }
-          "RELEASE_VERSION=$($env:RELEASE_VERSION.TrimStart('v'))" >> $env:GITHUB_ENV
+          if ("$env:RELEASE_TAG" -notmatch '^v\d+\.\d+\.\d+$') { throw "Invalid release tag: $env:RELEASE_TAG" }
+
+      - name: Checkout release tag
+        uses: actions/checkout@v6
+        with:
+          ref: ${{ env.RELEASE_TAG }}
+
+      - name: Set release version
+        shell: pwsh
+        run: |
+          "RELEASE_VERSION=$($env:RELEASE_TAG.TrimStart('v'))" >> $env:GITHUB_ENV
 
       - name: Set up Python
         uses: actions/setup-python@v7
@@ -113,12 +123,12 @@ jobs:
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v3
         with:
-          tag_name: ${{ github.ref_name }}
+          tag_name: ${{ env.RELEASE_TAG }}
           target_commitish: ${{ github.sha }}
           generate_release_notes: true
-          name: EarthLive Wallpaper ${{ github.ref_name }}
+          name: EarthLive Wallpaper ${{ env.RELEASE_TAG }}
           body: |
-            ## 🌍 EarthLive Wallpaper ${{ github.ref_name }}
+            ## 🌍 EarthLive Wallpaper ${{ env.RELEASE_TAG }}
 
             ### Windows downloads
             - `EarthLive-Setup-${{ env.RELEASE_VERSION }}.exe` — Windows Installer (versioned)
