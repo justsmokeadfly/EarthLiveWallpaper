@@ -1,4 +1,4 @@
-# 🌍 EarthLive Wallpaper v1.3.0
+# 🌍 EarthLive Wallpaper v1.3.1
 
 > A lightweight Windows desktop application that turns near-real-time Himawari-8/9 satellite imagery into a live Earth wallpaper.
 
@@ -13,26 +13,28 @@ EarthLive Wallpaper automatically downloads the latest available Himawari satell
 
 It is designed to stay lightweight, unobtrusive, and easy to configure while running quietly in the system tray.
 
-## ✨ What's improved in v1.3.0
+## ✨ What's improved in v1.3.1
 
+- 📁 Windows Installer now installs **EarthLive Wallpaper** under `C:\Program Files\EarthLive Wallpaper` instead of the per-user AppData Programs directory.
+- 🪟 Installer, Start Menu, desktop shortcut, and startup integration use the **EarthLive Wallpaper** application name consistently.
 - 🔒 Downloaded tiles are checked for valid image content, supported Content-Type, and safe size limits.
 - ⚙️ Configuration values are validated and invalid values fall back safely to defaults.
 - 🧵 Manual scheduler triggers are thread-safe and concurrent requests are safely coalesced.
-- 🧪 CI now gates changes with Ruff, mypy, and pytest.
+- 🧪 CI gates changes with Ruff, mypy, and pytest.
 - 📦 Windows releases are driven by the Git tag, eliminating version mismatches between ZIP, EXE, and Installer.
-- 🪟 Installer metadata and project URLs are aligned with the current repository.
 - 💾 Application state and configuration use atomic writes.
 
 ## ⬇️ Download for Windows
 
 **No Python installation is required for the packaged releases.**
 
-Download **EarthLive Wallpaper v1.3.0** from the [GitHub Releases](https://github.com/justsmokeadfly/EarthLiveWallpaper/releases) page.
+Download **EarthLive Wallpaper v1.3.1** from the [GitHub Releases](https://github.com/justsmokeadfly/EarthLiveWallpaper/releases) page.
 
-- **Portable ZIP** — extract it anywhere and run `EarthLive.exe`.
-- **Windows Installer** — install EarthLive with Start Menu, optional desktop shortcut, and optional Windows startup integration.
+- **Windows Installer** — recommended. Installs EarthLive Wallpaper to `C:\Program Files\EarthLive Wallpaper` with Start Menu integration and optional desktop shortcut/startup integration.
+- **Portable ZIP** — extract it anywhere and run `EarthLive.exe` without installation.
+- **Standalone EXE** — run the packaged `EarthLive.exe` directly.
 
-Releases are built automatically by GitHub Actions from semantic version tags such as `v1.3.0`. Each release is validated with linting, type checking, tests, PyInstaller, and installer checks.
+Releases are built automatically by GitHub Actions from semantic version tags such as `v1.3.1`. Each release is validated with linting, type checking, tests, PyInstaller, and installer checks.
 
 ## 👤 Author
 
