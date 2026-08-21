@@ -1,0 +1,108 @@
+name: Windows Release
+
+on:
+  push:
+    branches:
+      - "release/v1.0.2"
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+
+env:
+  RELEASE_VERSION: "1.0.2"
+
+jobs:
+  release:
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Install dependencies
+        run: python -m pip install -r requirements-dev.txt
+
+      - name: Run tests
+        run: python -m pytest -q
+
+      - name: Build portable application
+        run: pyinstaller --clean --noconfirm EarthLive.spec
+
+      - name: Verify EarthLive.exe
+        shell: pwsh
+        run: |
+          if (-not (Test-Path "dist/EarthLive/EarthLive.exe")) {
+            throw "EarthLive.exe was not created by PyInstaller."
+          }
+
+      - name: Create portable ZIP
+        shell: pwsh
+        run: Compress-Archive -Path "dist/EarthLive/*" -DestinationPath "EarthLive-${{ env.RELEASE_VERSION }}-windows-x64-portable.zip"
+
+      - name: Install Inno Setup
+        shell: pwsh
+        run: choco install innosetup --no-progress -y
+
+      - name: Set installer version
+        shell: pwsh
+        run: |
+          $version = "${{ env.RELEASE_VERSION }}"
+          $path = "installer/EarthLive.iss"
+          $content = Get-Content $path -Raw
+          $replacement = '#define MyAppVersion "' + $version + '"'
+          $content = $content -replace '#define MyAppVersion "[^"]+"', $replacement
+          Set-Content -Path $path -Value $content -Encoding UTF8
+
+      - name: Build installer
+        shell: pwsh
+        run: '& "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" "installer\EarthLive.iss"'
+
+      - name: Verify installer
+        shell: pwsh
+        run: |
+          if (-not (Test-Path "installer/output/EarthLive-Setup-${{ env.RELEASE_VERSION }}.exe")) {
+            throw "Installer was not created."
+          }
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v1.0.2
+          target_commitish: ${{ github.sha }}
+          generate_release_notes: true
+          body: |
+            ## 🇬🇧 English
+
+            ### EarthLive v1.0.2
+
+            #### Changes
+            - Added a Russian translation of the MIT License for the installer.
+            - When Russian is selected during installation, the license text is displayed in Russian.
+            - When English is selected, the original MIT License is displayed.
+            - Fixed startup behavior: wallpapers are not updated automatically when the application starts.
+            - Wallpapers can be updated manually with **Update now**.
+            - Scheduled updates remain available after startup.
+
+            ## 🇷🇺 Русский
+
+            ### EarthLive v1.0.2
+
+            #### Изменения
+            - Добавлен русский перевод лицензии MIT для установщика.
+            - При выборе русского языка во время установки текст лицензии отображается на русском.
+            - При выборе английского языка отображается оригинальная лицензия MIT.
+            - Исправлен запуск программы: при старте обои больше не обновляются автоматически.
+            - Обновление обоев можно выполнить вручную кнопкой **«Обновить сейчас»**.
+            - Плановые автоматические обновления после запуска сохраняются.
+          files: |
+            dist/EarthLive/EarthLive.exe
+            EarthLive-${{ env.RELEASE_VERSION }}-windows-x64-portable.zip
+            installer/output/EarthLive-Setup-${{ env.RELEASE_VERSION }}.exe
