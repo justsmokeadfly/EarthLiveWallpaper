@@ -1,4 +1,4 @@
-"""Manages launching EarthLive automatically at Windows login.
+"""Manages launching EarthLive Wallpaper automatically at Windows login.
 
 Uses the per-user ``HKEY_CURRENT_USER\\...\\Run`` registry key rather than
 a Scheduled Task or Startup-folder shortcut: it requires no elevated
@@ -18,11 +18,11 @@ from logger import get_logger
 _logger = get_logger(__name__)
 
 _RUN_KEY_PATH = r"Software\Microsoft\Windows\CurrentVersion\Run"
-_VALUE_NAME = "EarthLive"
+_VALUE_NAME = "EarthLive Wallpaper"
 
 
 class AutostartManager:
-    """Enables/disables/checks EarthLive's Windows login autostart entry."""
+    """Enables/disables/checks EarthLive Wallpaper's Windows login autostart entry."""
 
     def __init__(self, executable_path: Path | None = None) -> None:
         """Initialize the manager.
