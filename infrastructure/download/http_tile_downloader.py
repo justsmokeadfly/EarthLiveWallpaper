@@ -69,34 +69,36 @@ class HttpTileDownloader(TileDownloader):
         )
 
         headers = {"User-Agent": "EarthLiveWallpaper/1.3.0 (+https://github.com/justsmokeadfly/EarthLiveWallpaper)"}
-        with httpx.Client(timeout=_HTTP_TIMEOUT_SECONDS, headers=headers, follow_redirects=True) as client:
-            with ThreadPoolExecutor(max_workers=self._max_workers) as executor:
-                future_to_tile = {
-                    executor.submit(
-                        self._download_with_retry,
-                        client, tile, cache_dir / tile.cache_key,
-                        retry_count, retry_delay_seconds,
-                    ): tile
-                    for tile in to_download
-                }
+        with (
+            httpx.Client(timeout=_HTTP_TIMEOUT_SECONDS, headers=headers, follow_redirects=True) as client,
+            ThreadPoolExecutor(max_workers=self._max_workers) as executor,
+        ):
+            future_to_tile = {
+                executor.submit(
+                    self._download_with_retry,
+                    client, tile, cache_dir / tile.cache_key,
+                    retry_count, retry_delay_seconds,
+                ): tile
+                for tile in to_download
+            }
 
-                completed = already_cached
-                for future in as_completed(future_to_tile):
-                    tile = future_to_tile[future]
-                    completed += 1
-                    try:
-                        local_path = future.result()
-                    except Exception:
-                        _logger.exception("Unexpected error downloading tile %s", tile.cache_key)
-                        local_path = None
+            completed = already_cached
+            for future in as_completed(future_to_tile):
+                tile = future_to_tile[future]
+                completed += 1
+                try:
+                    local_path = future.result()
+                except Exception:
+                    _logger.exception("Unexpected error downloading tile %s", tile.cache_key)
+                    local_path = None
 
-                    if local_path is not None:
-                        results[tile] = local_path
-                    else:
-                        _logger.warning("Tile %d/%d permanently failed: %s", completed, total, tile.cache_key)
+                if local_path is not None:
+                    results[tile] = local_path
+                else:
+                    _logger.warning("Tile %d/%d permanently failed: %s", completed, total, tile.cache_key)
 
-                    if on_progress is not None:
-                        on_progress(completed, total)
+                if on_progress is not None:
+                    on_progress(completed, total)
 
         _logger.info("Tile download complete: %d/%d tile(s) available.", len(results), len(tiles))
         return results
