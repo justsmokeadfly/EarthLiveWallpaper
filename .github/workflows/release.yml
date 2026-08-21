@@ -12,9 +12,6 @@ permissions:
 env:
   RELEASE_VERSION: "1.2.0"
 
-env:
-  RELEASE_VERSION: "1.2.0"
-
 jobs:
   release:
     runs-on: windows-latest
