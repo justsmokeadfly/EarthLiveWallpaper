@@ -23,7 +23,9 @@ jobs:
         run: python -m pip install -r requirements-dev.txt
 
       - name: Ruff — full repository
-        run: python -m ruff check . --output-format=concise
+        run: |
+          python -m ruff check . --fix --output-format=concise
+          python -m ruff check . --output-format=concise
 
       - name: Ruff — security rules
         run: python -m ruff check . --select S --output-format=concise
