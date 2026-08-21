@@ -34,17 +34,7 @@ class TileSpec:
 
 @dataclass(frozen=True)
 class SatelliteImage:
-    """Represents a full-disk satellite image request/result.
-
-    Attributes:
-        provider_name: Name of the provider that produced this image
-            (e.g. "himawari").
-        timestamp: The UTC timestamp this image represents, as reported by
-            the provider.
-        grid_size: The tile grid resolution used to assemble this image.
-        tiles: The ordered list of tile specifications required to
-            assemble the full image.
-    """
+    """Represents a full-disk satellite image request/result."""
 
     provider_name: str
     timestamp: datetime
@@ -54,16 +44,7 @@ class SatelliteImage:
 
 @dataclass(frozen=True)
 class AssembledImage:
-    """Represents a fully assembled, saved satellite image.
-
-    Attributes:
-        source: The SatelliteImage metadata this was assembled from.
-        file_path: Path to the saved PNG file on disk.
-        content_hash: SHA-256 hex digest of the assembled image bytes,
-            used for duplicate-content detection.
-        width: Pixel width of the assembled image.
-        height: Pixel height of the assembled image.
-    """
+    """Represents a fully assembled, saved satellite image."""
 
     source: SatelliteImage
     file_path: Path
@@ -74,25 +55,7 @@ class AssembledImage:
 
 @dataclass
 class AppState:
-    """Persistent application state, independent of user-editable config.
-
-    Attributes:
-        last_timestamp: UTC timestamp of the last image successfully
-            considered (may equal the currently applied wallpaper's
-            timestamp or a duplicate that was skipped).
-        last_content_hash: SHA-256 hash of the last assembled image
-            content, used to detect duplicate imagery under a new
-            timestamp.
-        last_update_at: Wall-clock time of the last update *attempt*
-            (successful or not), used to compute "next update" in the UI.
-        last_successful_update_at: Wall-clock time of the last update that
-            actually resulted in a new wallpaper being applied.
-        last_outcome: The outcome of the most recent update cycle.
-        history: Ordered list of previously applied wallpaper file paths,
-            most recent first, capped at the configured history size.
-        total_updates_applied: Lifetime counter of successful wallpaper
-            changes, for display/diagnostics.
-    """
+    """Persistent application state, independent of user-editable config."""
 
     last_timestamp: datetime | None = None
     last_content_hash: str | None = None
@@ -105,28 +68,7 @@ class AppState:
 
 @dataclass
 class AppConfig:
-    """User-editable application configuration.
-
-    Attributes:
-        provider: Name of the active image provider (e.g. "himawari").
-        grid_size: Selected tile grid resolution.
-        check_interval_hours: Hours between automatic update checks.
-        history_size: Maximum number of wallpapers retained in history.
-        theme: UI color theme.
-        autostart: Whether EarthLive should launch on Windows login.
-        wallpaper_mode: Desktop wallpaper positioning mode.
-        retry_count: Maximum retry attempts per failed tile download.
-        retry_delay_seconds: Base delay (seconds) used for exponential
-            backoff between tile download retries.
-        max_cache_age_hours: Maximum age of cached tiles before they are
-            eligible for pruning.
-        max_cache_size_mb: Soft cap on total cache directory size in
-            megabytes; oldest files are pruned first when exceeded.
-        language: UI display language.
-        paused: When true, the update use case short-circuits immediately
-            (no network/provider check at all) without touching the
-            current wallpaper. Toggled from the main window.
-    """
+    """User-editable EarthLive Wallpaper configuration."""
 
     provider: str = "himawari"
     grid_size: GridSize = GridSize.GRID_4X4
@@ -134,7 +76,7 @@ class AppConfig:
     history_size: int = 10
     theme: Theme = Theme.DARK
     autostart: bool = False
-    wallpaper_mode: WallpaperMode = WallpaperMode.FILL
+    wallpaper_mode: WallpaperMode = WallpaperMode.FIT
     retry_count: int = 3
     retry_delay_seconds: float = 5.0
     max_cache_age_hours: float = 48.0
