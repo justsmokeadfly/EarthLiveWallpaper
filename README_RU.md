@@ -1,4 +1,4 @@
-# 🌍 EarthLive Wallpaper v1.1.0
+# 🌍 EarthLive Wallpaper v1.2.0
 
 > Лёгкое приложение для Windows, которое превращает свежие спутниковые снимки Земли Himawari-8/9 в живые обои рабочего стола.
 
@@ -9,7 +9,7 @@
 [![Python](https://img.shields.io/badge/Python-3.11%2B-3776AB?style=flat-square&logo=python&logoColor=white)](https://www.python.org/)
 [![License](https://img.shields.io/badge/license-MIT-green?style=flat-square)](LICENSE)
 
-**EarthLive Wallpaper v1.1.0** автоматически получает самый свежий доступный снимок Himawari, скачивает необходимые тайлы, собирает их в полноценное изображение диска Земли и устанавливает его как обои Windows.
+**EarthLive Wallpaper v1.2.0** автоматически получает самый свежий доступный снимок Himawari, скачивает необходимые тайлы, собирает их в полноценное изображение диска Земли и устанавливает его как обои Windows.
 
 Программа работает в фоновом режиме и может находиться в системном трее, практически не мешая работе пользователя.
 
@@ -195,9 +195,9 @@ EarthLive Wallpaper — независимый проект и **не связа
 
 ## 👤 Автор
 
-**justzef**
+**justsmokeadfly**
 
-- GitHub: https://github.com/justzef
+- GitHub: https://github.com/justsmokeadfly
 - Проект: https://github.com/justsmokeadfly/EarthLiveWallpaper
 
 ---
