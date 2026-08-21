@@ -17,13 +17,13 @@ from domain.enums import GridSize, Language, Theme, WallpaperMode
 from logger import get_logger
 
 _logger = get_logger(__name__)
-_APP_NAME = "EarthLive"
-_APP_AUTHOR = "EarthLive"
+_APP_NAME = "EarthLive Wallpaper"
+_APP_AUTHOR = "EarthLive Wallpaper"
 _CONFIG_FILENAME = "config.json"
 
 
 class ConfigPaths:
-    """Resolves all filesystem locations used by EarthLive."""
+    """Resolves all filesystem locations used by EarthLive Wallpaper."""
 
     def __init__(self, override_config_path: Path | None = None, portable: bool = False) -> None:
         self._override_config_path = override_config_path
@@ -197,7 +197,7 @@ def save_config(paths: ConfigPaths, config: AppConfig) -> None:
         tmp_file.write_bytes(payload)
         os.replace(tmp_file, config_file)
     except Exception:
-        _logger.exception("Failed to save config to %s.", config_file)
+        _logger.exception("Failed to save config to %s", config_file)
         if tmp_file.exists():
             with suppress(OSError):
                 tmp_file.unlink()
