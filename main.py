@@ -16,6 +16,8 @@ import time
 from pathlib import Path
 
 from app import build_app_controller
+from application.app_controller import AppController
+from application.results import UpdateResult
 from logger import get_logger
 
 _logger = get_logger(__name__)
@@ -60,7 +62,7 @@ def _parse_args(argv: list[str]) -> argparse.Namespace:
     return parser.parse_args(argv)
 
 
-def _run_headless(controller, update_now: bool) -> None:
+def _run_headless(controller: AppController, update_now: bool) -> None:
     """Run EarthLive with no UI: start the scheduler and block until
     interrupted (Ctrl+C or SIGTERM).
 
@@ -97,7 +99,7 @@ def _run_headless(controller, update_now: bool) -> None:
         _logger.info("EarthLive headless mode stopped.")
 
 
-def _run_with_ui(controller, update_now: bool) -> None:
+def _run_with_ui(controller: AppController, update_now: bool) -> None:
     """Run EarthLive with the full CustomTkinter UI and system tray icon.
 
     Args:
@@ -127,7 +129,7 @@ def _run_with_ui(controller, update_now: bool) -> None:
     )
     tray.start()
 
-    def _notify_result(result) -> None:
+    def _notify_result(result: UpdateResult) -> None:
         from domain.enums import UpdateOutcome
 
         # Only notify for outcomes the user would actually care about:

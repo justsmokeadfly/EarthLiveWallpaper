@@ -86,14 +86,15 @@ class HttpTileDownloader(TileDownloader):
             for future in as_completed(future_to_tile):
                 tile = future_to_tile[future]
                 completed += 1
+                downloaded_path: Path | None
                 try:
-                    local_path = future.result()
+                    downloaded_path = future.result()
                 except Exception:
                     _logger.exception("Unexpected error downloading tile %s", tile.cache_key)
-                    local_path = None
+                    downloaded_path = None
 
-                if local_path is not None:
-                    results[tile] = local_path
+                if downloaded_path is not None:
+                    results[tile] = downloaded_path
                 else:
                     _logger.warning("Tile %d/%d permanently failed: %s", completed, total, tile.cache_key)
 

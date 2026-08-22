@@ -61,7 +61,7 @@ class AutostartManager:
                 winreg.HKEY_CURRENT_USER, _RUN_KEY_PATH, 0, winreg.KEY_SET_VALUE
             ) as key:
                 winreg.SetValueEx(
-                    key, _VALUE_NAME, 0, winreg.REG_SZ, self._executable_path
+                    key, _VALUE_NAME, 0, winreg.REG_SZ, str(self._executable_path)
                 )
             _logger.info("Autostart enabled: %s", self._executable_path)
             return True

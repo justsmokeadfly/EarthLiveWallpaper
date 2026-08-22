@@ -7,12 +7,13 @@ settings, and application controls.
 from __future__ import annotations
 
 import os
+from collections.abc import Callable
 from datetime import datetime
 
 import customtkinter as ctk
 
 from application.app_controller import AppController, StatusSnapshot
-from application.progress import ProgressStage
+from application.progress import ProgressSnapshot, ProgressStage
 from domain.enums import UpdateOutcome
 from logger import get_logger
 from ui import theme
@@ -190,7 +191,9 @@ class MainWindow(ctk.CTk):
         self._pause_button = self._make_secondary_button(secondary, "button.pause", self._on_pause_toggle_clicked, 1)
         self._pause_button.configure(text=self._pause_button_text())
 
-    def _make_action_button(self, parent: ctk.CTkBaseClass, key: str, command, column: int):
+    def _make_action_button(
+        self, parent: ctk.CTkBaseClass, key: str, command: Callable[[], None], column: int,
+    ) -> ctk.CTkButton:
         button = ctk.CTkButton(
             parent, text=self._tr.get(key), command=command,
             fg_color=theme.COLOR_SURFACE_ALT, hover_color=theme.COLOR_SURFACE,
@@ -199,7 +202,9 @@ class MainWindow(ctk.CTk):
         button.grid(row=0, column=column, sticky="ew", padx=3)
         return button
 
-    def _make_secondary_button(self, parent: ctk.CTkBaseClass, key: str, command, column: int):
+    def _make_secondary_button(
+        self, parent: ctk.CTkBaseClass, key: str, command: Callable[[], None], column: int,
+    ) -> ctk.CTkButton:
         button = ctk.CTkButton(
             parent, text=self._tr.get(key), command=command,
             fg_color="transparent", border_width=1, border_color=theme.COLOR_SURFACE_ALT,
@@ -221,7 +226,7 @@ class MainWindow(ctk.CTk):
         except Exception:
             _logger.exception("Failed to refresh main-window status.")
 
-    def _apply_progress(self, progress) -> None:
+    def _apply_progress(self, progress: ProgressSnapshot) -> None:
         if progress.stage == ProgressStage.IDLE:
             self._progress_bar.configure(mode="determinate")
             self._progress_bar.stop()
@@ -277,7 +282,11 @@ class MainWindow(ctk.CTk):
         folder = self._controller.wallpapers_dir
         folder.mkdir(parents=True, exist_ok=True)
         try:
-            os.startfile(str(folder))
+            # S606: os.startfile is the standard Windows API for opening a folder
+            # in Explorer. `folder` comes from internal app configuration
+            # (wallpapers_dir), never from user input, so there is no
+            # command-injection risk here.
+            os.startfile(str(folder))  # noqa: S606
         except OSError:
             _logger.exception("Failed to open wallpapers folder: %s", folder)
 

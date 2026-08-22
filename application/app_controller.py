@@ -14,16 +14,16 @@ from dataclasses import dataclass, replace
 from datetime import datetime
 from pathlib import Path
 
-from domain.entities import AppConfig
-from domain.enums import UpdateOutcome
-from domain.interfaces import StateRepository, TimelapseGenerator
-from infrastructure.persistence.filesystem_cache_manager import FilesystemCacheManager
-from infrastructure.system.autostart import AutostartManager
 from application.progress import ProgressSnapshot, ProgressTracker
 from application.results import UpdateResult
 from application.scheduler_service import SchedulerService
 from application.update_wallpaper_use_case import UpdateWallpaperUseCase
 from config import ConfigPaths, load_config, save_config
+from domain.entities import AppConfig
+from domain.enums import UpdateOutcome
+from domain.interfaces import StateRepository, TimelapseGenerator
+from infrastructure.persistence.filesystem_cache_manager import FilesystemCacheManager
+from infrastructure.system.autostart import AutostartManager
 from logger import get_logger
 
 _logger = get_logger(__name__)
@@ -67,7 +67,7 @@ class AppController:
         self._notifier: Callable[[UpdateResult], None] | None = None
 
     @property
-    def wallpapers_dir(self):
+    def wallpapers_dir(self) -> Path:
         return self._config_paths.wallpapers_dir
 
     def start(self) -> None:

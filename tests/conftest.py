@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 
 import pytest
@@ -14,7 +14,7 @@ from domain.enums import GridSize
 @pytest.fixture
 def sample_timestamp() -> datetime:
     """A fixed UTC timestamp used across multiple tests."""
-    return datetime(2026, 7, 29, 12, 0, 0, tzinfo=timezone.utc)
+    return datetime(2026, 7, 29, 12, 0, 0, tzinfo=UTC)
 
 
 @pytest.fixture

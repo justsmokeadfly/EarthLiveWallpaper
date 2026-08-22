@@ -5,7 +5,8 @@ Windows API, no real filesystem tile downloads).
 
 from __future__ import annotations
 
-from datetime import datetime, timezone
+from collections.abc import Callable
+from datetime import UTC, datetime
 from pathlib import Path
 
 from application.update_wallpaper_use_case import UpdateWallpaperUseCase
@@ -60,7 +61,14 @@ class FakeDownloader(TileDownloader):
         self.succeed = succeed
         self.progress_calls: list[tuple[int, int]] = []
 
-    def fetch_missing(self, tiles, cache_dir, retry_count, retry_delay_seconds, on_progress=None):
+    def fetch_missing(
+        self,
+        tiles: tuple[TileSpec, ...],
+        cache_dir: Path,
+        retry_count: int,
+        retry_delay_seconds: float,
+        on_progress: Callable[[int, int], None] | None = None,
+    ) -> dict[TileSpec, Path]:
         if not self.succeed:
             return {}
         results = {}
@@ -78,7 +86,12 @@ class FakeAssembler(ImageAssembler):
         self.content_hash = content_hash
         self.succeed = succeed
 
-    def assemble(self, image, tile_paths, output_dir):
+    def assemble(
+        self,
+        image: SatelliteImage,
+        tile_paths: dict[TileSpec, Path],
+        output_dir: Path,
+    ) -> AssembledImage | None:
         if not self.succeed:
             return None
         return AssembledImage(
@@ -150,7 +163,7 @@ class TestUpdateWallpaperUseCase:
     """End-to-end (within the application layer) tests of one update cycle."""
 
     def test_success_path_applies_wallpaper_and_updates_state(self, tmp_path: Path) -> None:
-        timestamp = datetime(2026, 7, 29, 12, 0, 0, tzinfo=timezone.utc)
+        timestamp = datetime(2026, 7, 29, 12, 0, 0, tzinfo=UTC)
         wallpaper_setter = FakeWallpaperSetter()
         use_case = _build_use_case(
             tmp_path, FakeProvider(timestamp), wallpaper_setter=wallpaper_setter
@@ -167,7 +180,7 @@ class TestUpdateWallpaperUseCase:
         wallpaper_setter = FakeWallpaperSetter()
         use_case = _build_use_case(
             tmp_path,
-            FakeProvider(datetime.now(timezone.utc)),
+            FakeProvider(datetime.now(UTC)),
             wallpaper_setter=wallpaper_setter,
             network_probe=FakeNetworkProbe(online=False),
         )
@@ -189,7 +202,7 @@ class TestUpdateWallpaperUseCase:
         assert wallpaper_setter.applied_paths == []
 
     def test_already_up_to_date_is_a_noop(self, tmp_path: Path) -> None:
-        timestamp = datetime(2026, 7, 29, 12, 0, 0, tzinfo=timezone.utc)
+        timestamp = datetime(2026, 7, 29, 12, 0, 0, tzinfo=UTC)
         state_repo = FakeStateRepository(AppState(last_timestamp=timestamp))
         wallpaper_setter = FakeWallpaperSetter()
         use_case = _build_use_case(
@@ -207,8 +220,8 @@ class TestUpdateWallpaperUseCase:
     def test_duplicate_content_skips_wallpaper_but_updates_timestamp(
         self, tmp_path: Path
     ) -> None:
-        old_timestamp = datetime(2026, 7, 29, 11, 0, 0, tzinfo=timezone.utc)
-        new_timestamp = datetime(2026, 7, 29, 12, 0, 0, tzinfo=timezone.utc)
+        old_timestamp = datetime(2026, 7, 29, 11, 0, 0, tzinfo=UTC)
+        new_timestamp = datetime(2026, 7, 29, 12, 0, 0, tzinfo=UTC)
         state_repo = FakeStateRepository(
             AppState(last_timestamp=old_timestamp, last_content_hash="samehash")
         )
@@ -231,7 +244,7 @@ class TestUpdateWallpaperUseCase:
         wallpaper_setter = FakeWallpaperSetter()
         use_case = _build_use_case(
             tmp_path,
-            FakeProvider(datetime.now(timezone.utc)),
+            FakeProvider(datetime.now(UTC)),
             downloader=FakeDownloader(succeed=False),
             wallpaper_setter=wallpaper_setter,
         )
@@ -245,7 +258,7 @@ class TestUpdateWallpaperUseCase:
         wallpaper_setter = FakeWallpaperSetter()
         use_case = _build_use_case(
             tmp_path,
-            FakeProvider(datetime.now(timezone.utc)),
+            FakeProvider(datetime.now(UTC)),
             assembler=FakeAssembler(succeed=False),
             wallpaper_setter=wallpaper_setter,
         )
@@ -259,7 +272,7 @@ class TestUpdateWallpaperUseCase:
         wallpaper_setter = FakeWallpaperSetter(succeed=False)
         use_case = _build_use_case(
             tmp_path,
-            FakeProvider(datetime.now(timezone.utc)),
+            FakeProvider(datetime.now(UTC)),
             wallpaper_setter=wallpaper_setter,
         )
 
@@ -268,7 +281,7 @@ class TestUpdateWallpaperUseCase:
         assert result.outcome == UpdateOutcome.WALLPAPER_APPLY_FAILED
 
     def test_force_bypasses_already_up_to_date(self, tmp_path: Path) -> None:
-        timestamp = datetime(2026, 7, 29, 12, 0, 0, tzinfo=timezone.utc)
+        timestamp = datetime(2026, 7, 29, 12, 0, 0, tzinfo=UTC)
         state_repo = FakeStateRepository(AppState(last_timestamp=timestamp))
         wallpaper_setter = FakeWallpaperSetter()
         use_case = _build_use_case(
@@ -298,7 +311,7 @@ class TestUpdateWallpaperUseCase:
         wallpaper_setter = FakeWallpaperSetter()
         use_case = _build_use_case(
             tmp_path,
-            FakeProvider(datetime.now(timezone.utc)),
+            FakeProvider(datetime.now(UTC)),
             wallpaper_setter=wallpaper_setter,
         )
         config = AppConfig(grid_size=GridSize.GRID_2X2, paused=True)
@@ -312,7 +325,7 @@ class TestUpdateWallpaperUseCase:
         wallpaper_setter = FakeWallpaperSetter()
         use_case = _build_use_case(
             tmp_path,
-            FakeProvider(datetime.now(timezone.utc)),
+            FakeProvider(datetime.now(UTC)),
             wallpaper_setter=wallpaper_setter,
         )
         config = AppConfig(grid_size=GridSize.GRID_2X2, paused=True)
@@ -361,7 +374,7 @@ class TestProgressReporting:
         tracker = ProgressTracker()
         downloader = FakeDownloader()
         use_case = UpdateWallpaperUseCase(
-            provider=FakeProvider(datetime.now(timezone.utc)),
+            provider=FakeProvider(datetime.now(UTC)),
             downloader=downloader,
             assembler=FakeAssembler(),
             wallpaper_setter=FakeWallpaperSetter(),
@@ -389,7 +402,7 @@ class TestProgressReporting:
 
         tracker = ProgressTracker()
         use_case = UpdateWallpaperUseCase(
-            provider=FakeProvider(datetime.now(timezone.utc)),
+            provider=FakeProvider(datetime.now(UTC)),
             downloader=FakeDownloader(succeed=False),
             assembler=FakeAssembler(),
             wallpaper_setter=FakeWallpaperSetter(),

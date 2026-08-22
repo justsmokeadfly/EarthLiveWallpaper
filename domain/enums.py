@@ -28,7 +28,7 @@ class GridSize(str, Enum):
         return self.dimension * self.dimension
 
     @classmethod
-    def from_string(cls, value: str) -> "GridSize":
+    def from_string(cls, value: str) -> GridSize:
         """Parse a grid size from a string such as '4x4'.
 
         Args:
@@ -59,7 +59,7 @@ class WallpaperMode(str, Enum):
     SPAN = "span"
 
     @classmethod
-    def from_string(cls, value: str) -> "WallpaperMode":
+    def from_string(cls, value: str) -> WallpaperMode:
         """Parse a wallpaper mode from a string.
 
         Args:
@@ -87,7 +87,7 @@ class Theme(str, Enum):
     SYSTEM = "system"
 
     @classmethod
-    def from_string(cls, value: str) -> "Theme":
+    def from_string(cls, value: str) -> Theme:
         """Parse a theme from a string.
 
         Args:
@@ -129,7 +129,7 @@ class Language(str, Enum):
     RU = "ru"
 
     @classmethod
-    def from_string(cls, value: str) -> "Language":
+    def from_string(cls, value: str) -> Language:
         """Parse a language from a string.
 
         Args:
