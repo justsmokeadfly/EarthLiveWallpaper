@@ -10,7 +10,7 @@ outside this module needs to know about them.
 
 from __future__ import annotations
 
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 
 import httpx
 
@@ -95,7 +95,7 @@ class HimawariProvider(ImageProvider):
         try:
             # NICT format: "YYYY-MM-DD HH:MM:SS"
             naive = datetime.strptime(str(raw_date), "%Y-%m-%d %H:%M:%S")
-            return naive.replace(tzinfo=timezone.utc)
+            return naive.replace(tzinfo=UTC)
         except ValueError:
             _logger.warning("Could not parse Himawari timestamp: %r", raw_date)
             return None
@@ -151,9 +151,9 @@ class HimawariProvider(ImageProvider):
     def _round_down_to_interval(timestamp: datetime) -> datetime:
         """Round a timestamp down to the nearest 10-minute boundary (UTC)."""
         if timestamp.tzinfo is None:
-            timestamp = timestamp.replace(tzinfo=timezone.utc)
+            timestamp = timestamp.replace(tzinfo=UTC)
         else:
-            timestamp = timestamp.astimezone(timezone.utc)
+            timestamp = timestamp.astimezone(UTC)
 
         discard_minutes = timestamp.minute % _INTERVAL_MINUTES
         rounded = timestamp - timedelta(

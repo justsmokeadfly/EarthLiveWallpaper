@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 
 from domain.entities import AppState
@@ -25,10 +25,10 @@ class TestJsonStateRepository:
     def test_save_and_load_round_trip(self, tmp_path: Path) -> None:
         repo = JsonStateRepository(tmp_path / "state.json")
         original = AppState(
-            last_timestamp=datetime(2026, 7, 29, 12, 0, 0, tzinfo=timezone.utc),
+            last_timestamp=datetime(2026, 7, 29, 12, 0, 0, tzinfo=UTC),
             last_content_hash="abc123",
-            last_update_at=datetime(2026, 7, 29, 12, 1, 0, tzinfo=timezone.utc),
-            last_successful_update_at=datetime(2026, 7, 29, 12, 1, 0, tzinfo=timezone.utc),
+            last_update_at=datetime(2026, 7, 29, 12, 1, 0, tzinfo=UTC),
+            last_successful_update_at=datetime(2026, 7, 29, 12, 1, 0, tzinfo=UTC),
             last_outcome=UpdateOutcome.SUCCESS,
             history=["a.png", "b.png"],
             total_updates_applied=5,

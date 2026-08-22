@@ -2,11 +2,9 @@
 
 from __future__ import annotations
 
-import json
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 import httpx
-import pytest
 
 from domain.enums import GridSize
 from infrastructure.providers.himawari_provider import HimawariProvider
@@ -33,7 +31,7 @@ class TestGetLatestAvailableTimestamp:
 
         result = provider.get_latest_available_timestamp()
 
-        assert result == datetime(2026, 7, 29, 12, 30, 0, tzinfo=timezone.utc)
+        assert result == datetime(2026, 7, 29, 12, 30, 0, tzinfo=UTC)
 
     def test_returns_none_on_network_error(self) -> None:
         client = _make_mock_client(None, raise_error=True)
@@ -59,7 +57,7 @@ class TestBuildImageRequest:
 
     def test_builds_correct_number_of_tiles(self) -> None:
         provider = HimawariProvider()
-        timestamp = datetime(2026, 7, 29, 12, 34, 56, tzinfo=timezone.utc)
+        timestamp = datetime(2026, 7, 29, 12, 34, 56, tzinfo=UTC)
 
         image = provider.build_image_request(timestamp, GridSize.GRID_4X4)
 
@@ -69,15 +67,15 @@ class TestBuildImageRequest:
 
     def test_rounds_timestamp_down_to_ten_minutes(self) -> None:
         provider = HimawariProvider()
-        timestamp = datetime(2026, 7, 29, 12, 37, 42, tzinfo=timezone.utc)
+        timestamp = datetime(2026, 7, 29, 12, 37, 42, tzinfo=UTC)
 
         image = provider.build_image_request(timestamp, GridSize.GRID_2X2)
 
-        assert image.timestamp == datetime(2026, 7, 29, 12, 30, 0, tzinfo=timezone.utc)
+        assert image.timestamp == datetime(2026, 7, 29, 12, 30, 0, tzinfo=UTC)
 
     def test_tile_cache_keys_are_unique(self) -> None:
         provider = HimawariProvider()
-        timestamp = datetime(2026, 7, 29, 12, 0, 0, tzinfo=timezone.utc)
+        timestamp = datetime(2026, 7, 29, 12, 0, 0, tzinfo=UTC)
 
         image = provider.build_image_request(timestamp, GridSize.GRID_8X8)
 

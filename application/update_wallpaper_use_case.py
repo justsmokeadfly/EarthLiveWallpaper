@@ -7,9 +7,11 @@ the process or disturb the currently-applied wallpaper.
 from __future__ import annotations
 
 import time
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 
+from application.progress import ProgressStage, ProgressTracker
+from application.results import UpdateResult
 from domain.entities import AppConfig, AppState
 from domain.enums import UpdateOutcome, WallpaperMode
 from domain.interfaces import (
@@ -22,9 +24,6 @@ from domain.interfaces import (
     WallpaperSetter,
 )
 from logger import get_logger
-
-from application.progress import ProgressStage, ProgressTracker
-from application.results import UpdateResult
 
 _logger = get_logger(__name__)
 
@@ -110,7 +109,7 @@ class UpdateWallpaperUseCase:
             duration_seconds=duration,
         )
 
-        state.last_update_at = datetime.now(timezone.utc)
+        state.last_update_at = datetime.now(UTC)
         state.last_outcome = result.outcome
         self._state_repository.save(state)
 
@@ -232,7 +231,7 @@ class UpdateWallpaperUseCase:
 
         state.last_timestamp = latest_timestamp
         state.last_content_hash = assembled.content_hash
-        state.last_successful_update_at = datetime.now(timezone.utc)
+        state.last_successful_update_at = datetime.now(UTC)
         state.total_updates_applied += 1
         self._update_history(state, assembled.file_path, config.history_size)
         self._prune_cache(config)
