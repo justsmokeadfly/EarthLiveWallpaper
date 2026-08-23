@@ -81,12 +81,16 @@ class SettingsDialog(ctk.CTkToplevel):
             container, label=self._tr.get("settings.history_size"), variable=self._history_var
         )
 
-        self._theme_var = ctk.StringVar(value=self._config.theme.value)
+        self._theme_display = {t: self._tr.get(f"theme.{t.value}") for t in Theme}
+        self._theme_name_to_value = {
+            name: theme_member.value for theme_member, name in self._theme_display.items()
+        }
+        self._theme_var = ctk.StringVar(value=self._theme_display[self._config.theme])
         self._add_option_menu(
             container,
             label=self._tr.get("settings.theme"),
             variable=self._theme_var,
-            values=[t.value for t in Theme],
+            values=list(self._theme_display.values()),
         )
 
         self._language_var = ctk.StringVar(
@@ -104,12 +108,20 @@ class SettingsDialog(ctk.CTkToplevel):
             container, label=self._tr.get("settings.autostart"), variable=self._autostart_var
         )
 
-        self._wallpaper_mode_var = ctk.StringVar(value=self._config.wallpaper_mode.value)
+        self._wallpaper_mode_display = {
+            m: self._tr.get(f"wallpaper_mode.{m.value}") for m in WallpaperMode
+        }
+        self._wallpaper_mode_name_to_value = {
+            name: mode.value for mode, name in self._wallpaper_mode_display.items()
+        }
+        self._wallpaper_mode_var = ctk.StringVar(
+            value=self._wallpaper_mode_display[self._config.wallpaper_mode]
+        )
         self._add_option_menu(
             container,
             label=self._tr.get("settings.wallpaper_mode"),
             variable=self._wallpaper_mode_var,
-            values=[m.value for m in WallpaperMode],
+            values=list(self._wallpaper_mode_display.values()),
         )
 
         self._retry_count_var = ctk.StringVar(value=str(self._config.retry_count))
@@ -184,8 +196,12 @@ class SettingsDialog(ctk.CTkToplevel):
         """
         try:
             grid_size = GridSize.from_string(self._resolution_var.get())
-            theme_value = Theme.from_string(self._theme_var.get())
-            wallpaper_mode = WallpaperMode.from_string(self._wallpaper_mode_var.get())
+            theme_value = Theme.from_string(
+                self._theme_name_to_value[self._theme_var.get()]
+            )
+            wallpaper_mode = WallpaperMode.from_string(
+                self._wallpaper_mode_name_to_value[self._wallpaper_mode_var.get()]
+            )
             language_value = Language.from_string(
                 _LANGUAGE_NAME_TO_VALUE[self._language_var.get()]
             )

@@ -18,9 +18,9 @@ from domain.enums import UpdateOutcome
 from logger import get_logger
 from ui import theme
 from ui.about_dialog import AboutDialog
-from ui.history_dialog import HistoryDialog
 from ui.i18n import Translator
 from ui.settings_dialog import SettingsDialog
+from ui.wallpapers_dialog import WallpapersDialog
 
 _logger = get_logger(__name__)
 _STATUS_REFRESH_MS = 1000
@@ -104,7 +104,7 @@ class MainWindow(ctk.CTk):
         ).pack(fill="x")
         ctk.CTkLabel(
             title_frame,
-            text="Live Earth wallpaper",
+            text=self._tr.get("app_subtitle"),
             font=(theme.FONT_FAMILY, theme.FONT_SIZE_SMALL),
             text_color=theme.COLOR_TEXT_SECONDARY,
             anchor="w",
@@ -178,7 +178,7 @@ class MainWindow(ctk.CTk):
         for column in range(3):
             actions.grid_columnconfigure(column, weight=1)
 
-        self._history_button = self._make_action_button(actions, "button.history", self._on_history_clicked, 0)
+        self._wallpapers_button = self._make_action_button(actions, "button.wallpapers", self._on_wallpapers_clicked, 0)
         self._settings_button = self._make_action_button(actions, "button.settings", self._on_settings_clicked, 1)
         self._about_button = self._make_action_button(actions, "button.about", self._on_about_clicked, 2)
 
@@ -298,8 +298,8 @@ class MainWindow(ctk.CTk):
         dialog = AboutDialog(self, self._tr)
         dialog.grab_set()
 
-    def _on_history_clicked(self) -> None:
-        dialog = HistoryDialog(self, self._controller, self._tr)
+    def _on_wallpapers_clicked(self) -> None:
+        dialog = WallpapersDialog(self, self._controller, self._tr)
         dialog.grab_set()
 
     def _pause_button_text(self) -> str:
@@ -315,7 +315,7 @@ class MainWindow(ctk.CTk):
         self.title(self._tr.get("app_title"))
         self._update_button.configure(text=self._tr.get("button.update_now"))
         self._open_folder_button.configure(text=self._tr.get("button.open_folder"))
-        self._history_button.configure(text=self._tr.get("button.history"))
+        self._wallpapers_button.configure(text=self._tr.get("button.wallpapers"))
         self._pause_button.configure(text=self._pause_button_text())
         self._settings_button.configure(text=self._tr.get("button.settings"))
         self._about_button.configure(text=self._tr.get("button.about"))

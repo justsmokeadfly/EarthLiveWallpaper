@@ -12,7 +12,7 @@ from ui.i18n import Translator
 
 _logger = get_logger(__name__)
 
-APP_VERSION = "1.0.0"
+APP_VERSION = "1.5.0"
 APP_AUTHOR = "@justsmokeadfly"
 SOURCE_URL = "https://github.com/justsmokeadfly/EarthLive"
 AUTHOR_URL = "https://github.com/justsmokeadfly"
@@ -39,7 +39,7 @@ class AboutDialog(ctk.CTkToplevel):
 
         ctk.CTkLabel(header, text="🌍", font=(theme.FONT_FAMILY, 42), text_color=theme.COLOR_TEXT_PRIMARY).pack(pady=(18, 0))
         ctk.CTkLabel(header, text="EarthLive", font=(theme.FONT_FAMILY, 28, "bold"), text_color=theme.COLOR_TEXT_PRIMARY).pack(pady=(0, 2))
-        ctk.CTkLabel(header, text=f"Version {APP_VERSION}", font=(theme.FONT_FAMILY, theme.FONT_SIZE_SMALL), text_color=theme.COLOR_TEXT_SECONDARY).pack(pady=(0, 18))
+        ctk.CTkLabel(header, text=f"{self._tr.get('about.version')} {APP_VERSION}", font=(theme.FONT_FAMILY, theme.FONT_SIZE_SMALL), text_color=theme.COLOR_TEXT_SECONDARY).pack(pady=(0, 18))
 
         ctk.CTkLabel(
             self,
@@ -53,10 +53,9 @@ class AboutDialog(ctk.CTkToplevel):
         info = ctk.CTkFrame(self, fg_color=theme.COLOR_SURFACE, corner_radius=theme.CORNER_RADIUS)
         info.pack(fill="x", padx=18, pady=(0, 14))
 
-        self._add_info_row(info, self._tr.get("about.author"), APP_AUTHOR)
+        self._add_link_row(info, self._tr.get("about.author"), f"{APP_AUTHOR} ↗", AUTHOR_URL)
         self._add_info_row(info, self._tr.get("about.license"), "MIT")
-        self._add_link_row(info, self._tr.get("about.source"), "Open GitHub ↗", SOURCE_URL)
-        self._add_link_row(info, "Author", "@justsmokeadfly ↗", AUTHOR_URL)
+        self._add_link_row(info, self._tr.get("about.source"), self._tr.get("about.open_github"), SOURCE_URL)
 
         ctk.CTkButton(
             self,
