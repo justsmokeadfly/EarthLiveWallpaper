@@ -34,9 +34,15 @@ UninstallDisplayIcon={app}\{#MyAppExeName}
 Name: "english"; MessagesFile: "compiler:Default.isl"; LicenseFile: "..\LICENSE"
 Name: "russian"; MessagesFile: "compiler:Languages\Russian.isl"; LicenseFile: "..\LICENSE_RU.txt"
 
+[CustomMessages]
+english.AutostartTaskDescription=Launch EarthLive Wallpaper automatically at Windows login
+english.StartupGroupDescription=Startup:
+russian.AutostartTaskDescription=Запускать EarthLive Wallpaper автоматически при входе в Windows
+russian.StartupGroupDescription=Автозагрузка:
+
 [Tasks]
 Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{cm:AdditionalIcons}"; Flags: unchecked
-Name: "autostart"; Description: "Launch EarthLive Wallpaper automatically at Windows login"; GroupDescription: "Startup:"; Flags: unchecked
+Name: "autostart"; Description: "{cm:AutostartTaskDescription}"; GroupDescription: "{cm:StartupGroupDescription}"; Flags: unchecked
 
 [Files]
 Source: "..\dist\EarthLive\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
