@@ -124,6 +124,37 @@ class AppController:
     def reapply_from_history(self, file_path: Path) -> bool:
         return self._use_case.reapply(file_path, self._config.wallpaper_mode)
 
+    def delete_from_history(self, file_path: Path) -> bool:
+        """Permanently delete a previously saved wallpaper file and
+        remove its entry from history.
+
+        The file is deleted first; if that fails (e.g. permissions, the
+        file is locked/open elsewhere), the history entry is left
+        untouched so the user can retry. If the file is already absent,
+        this only cleans up the stale history entry.
+
+        Args:
+            file_path: Path to a previously assembled wallpaper PNG.
+
+        Returns:
+            ``True`` if the file no longer exists afterwards (deleted or
+            already absent) and history was updated; ``False`` if
+            deletion failed.
+        """
+        if file_path.exists():
+            try:
+                file_path.unlink()
+            except OSError:
+                _logger.exception("Failed to delete wallpaper file: %s", file_path)
+                return False
+
+        state = self._state_repository.load()
+        path_str = str(file_path)
+        if path_str in state.history:
+            state.history.remove(path_str)
+            self._state_repository.save(state)
+        return True
+
     def create_timelapse(self, output_path: Path, frame_duration_ms: int = 200) -> bool:
         history = self.get_history()
         oldest_first = list(reversed(history))
