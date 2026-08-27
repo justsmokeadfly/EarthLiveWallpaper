@@ -1,4 +1,4 @@
-"""Modern About dialog for EarthLive."""
+"""Modern About dialog for EarthLive Wallpaper."""
 
 from __future__ import annotations
 
@@ -12,14 +12,14 @@ from ui.i18n import Translator
 
 _logger = get_logger(__name__)
 
-APP_VERSION = "1.5.0"
+APP_VERSION = "1.6.0"
 APP_AUTHOR = "@justsmokeadfly"
-SOURCE_URL = "https://github.com/justsmokeadfly/EarthLive"
+SOURCE_URL = "https://github.com/justsmokeadfly/EarthLiveWallpaper"
 AUTHOR_URL = "https://github.com/justsmokeadfly"
 
 
 class AboutDialog(ctk.CTkToplevel):
-    """Display EarthLive information, credits, and project links."""
+    """Display EarthLive Wallpaper information, credits, and project links."""
 
     def __init__(self, master: ctk.CTk, translator: Translator) -> None:
         super().__init__(master)
@@ -38,7 +38,7 @@ class AboutDialog(ctk.CTkToplevel):
         header.pack(fill="x", padx=18, pady=(18, 10))
 
         ctk.CTkLabel(header, text="🌍", font=(theme.FONT_FAMILY, 42), text_color=theme.COLOR_TEXT_PRIMARY).pack(pady=(18, 0))
-        ctk.CTkLabel(header, text="EarthLive", font=(theme.FONT_FAMILY, 28, "bold"), text_color=theme.COLOR_TEXT_PRIMARY).pack(pady=(0, 2))
+        ctk.CTkLabel(header, text="EarthLive Wallpaper", font=(theme.FONT_FAMILY, 28, "bold"), text_color=theme.COLOR_TEXT_PRIMARY).pack(pady=(0, 2))
         ctk.CTkLabel(header, text=f"{self._tr.get('about.version')} {APP_VERSION}", font=(theme.FONT_FAMILY, theme.FONT_SIZE_SMALL), text_color=theme.COLOR_TEXT_SECONDARY).pack(pady=(0, 18))
 
         ctk.CTkLabel(
