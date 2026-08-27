@@ -115,7 +115,8 @@ class AppController:
         return self._nasa_media.get_apod()
     def get_webb_photos(self, limit: int = 24) -> list[NASAPhoto]:
         return self._nasa_media.get_webb_photos(limit)
-    def download_nasa_photo(self, photo: NASAPhoto, destination: Path, progress=None) -> Path:
+    def download_nasa_photo(self, photo: NASAPhoto, destination: Path,
+                            progress: Callable[[int, int], None] | None = None) -> Path:
         return self._nasa_media.download(photo, destination, progress)
     def translate_nasa_description(self, text: str) -> str:
         return self._nasa_media.translate_to_russian(text)
