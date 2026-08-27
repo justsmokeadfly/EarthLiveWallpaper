@@ -16,6 +16,8 @@ WEBB_FEED_URL = (
     "https://www.flickr.com/services/feeds/photoset.gne"
     "?set=72177720331299130&nsid=nasawebbtelescope&lang=en-us&format=rss_200"
 )
+_MYMEMORY_URL = "https://api.mymemory.translated.net/get"
+_MYMEMORY_MAX_BYTES = 450
 ProgressCallback = Callable[[int, int], None]
 
 
@@ -35,6 +37,7 @@ class NASAMediaService:
 
     def __init__(self, timeout: float = 30.0) -> None:
         self._timeout = timeout
+        self._translation_cache: dict[str, str] = {}
 
     def get_apod(self) -> NASAPhoto:
         with httpx.Client(timeout=self._timeout, follow_redirects=True) as client:
@@ -43,15 +46,13 @@ class NASAMediaService:
             data = response.json()
         if data.get("media_type") != "image" or not data.get("url"):
             raise RuntimeError("NASA APOD did not return an image.")
-        image_url = str(data.get("hdurl") or data["url"])
         return NASAPhoto(
             title=str(data.get("title", "NASA Picture of the Day")),
             description_en=str(data.get("explanation", "")),
-            image_url=image_url,
+            image_url=str(data.get("hdurl") or data["url"]),
             source_url=str(data.get("url", "")),
             date=str(data.get("date", "")),
             copyright=str(data.get("copyright", "")),
-            thumbnail_url=image_url,
         )
 
     def get_webb_photos(self, limit: int = 24) -> list[NASAPhoto]:
@@ -67,7 +68,7 @@ class NASAMediaService:
             media = item.find("media:content", ns)
             thumbnail = item.find("media:thumbnail", ns)
             image_url = media.attrib.get("url", "") if media is not None else ""
-            thumbnail_url = thumbnail.attrib.get("url", "") if thumbnail is not None else image_url
+            thumbnail_url = thumbnail.attrib.get("url", "") if thumbnail is not None else ""
             source = item.findtext("link") or image_url
             if not title or not image_url:
                 continue
@@ -106,20 +107,64 @@ class NASAMediaService:
         return destination
 
     def translate_to_russian(self, text: str) -> str:
-        """Translate a short description using MyMemory, with safe fallback."""
-        if not text:
+        """Translate English text to Russian in API-safe chunks with caching."""
+        normalized = text.strip()
+        if not normalized:
             return ""
+        cached = self._translation_cache.get(normalized)
+        if cached is not None:
+            return cached
+
+        chunks = _split_for_translation(normalized, _MYMEMORY_MAX_BYTES)
+        translated_chunks: list[str] = []
         try:
             with httpx.Client(timeout=15.0, follow_redirects=True) as client:
-                response = client.get(
-                    "https://api.mymemory.translated.net/get",
-                    params={"q": text[:4500], "langpair": "en|ru"},
-                )
-                response.raise_for_status()
-                translated = response.json().get("responseData", {}).get("translatedText", "")
-                return str(translated or text)
-        except (httpx.HTTPError, ValueError, TypeError):
-            return text
+                for chunk in chunks:
+                    response = client.get(
+                        _MYMEMORY_URL,
+                        params={
+                            "q": chunk,
+                            "langpair": "en|ru",
+                            "mt": "1",
+                        },
+                    )
+                    response.raise_for_status()
+                    payload = response.json()
+                    translated = payload.get("responseData", {}).get("translatedText", "")
+                    if not translated:
+                        raise ValueError("MyMemory returned an empty translation.")
+                    translated_chunks.append(str(translated).strip())
+        except (httpx.HTTPError, ValueError, TypeError, KeyError):
+            return normalized
+
+        result = " ".join(translated_chunks).strip() or normalized
+        self._translation_cache[normalized] = result
+        return result
+
+
+def _split_for_translation(text: str, max_bytes: int) -> list[str]:
+    """Split text into UTF-8 chunks below the translation API byte limit."""
+    words = text.split()
+    chunks: list[str] = []
+    current = ""
+    for word in words:
+        candidate = word if not current else f"{current} {word}"
+        if len(candidate.encode("utf-8")) <= max_bytes:
+            current = candidate
+            continue
+        if current:
+            chunks.append(current)
+        current = word
+        if len(current.encode("utf-8")) > max_bytes:
+            encoded = current.encode("utf-8")
+            for start in range(0, len(encoded), max_bytes):
+                piece = encoded[start : start + max_bytes].decode("utf-8", errors="ignore").strip()
+                if piece:
+                    chunks.append(piece)
+            current = ""
+    if current:
+        chunks.append(current)
+    return chunks
 
 
 def _strip_html(value: str) -> str:
