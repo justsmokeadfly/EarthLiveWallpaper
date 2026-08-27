@@ -1,6 +1,6 @@
-# 🌍 EarthLive Wallpaper v1.5.0
+# 🌍 EarthLive Wallpaper v1.6.0
 
-> A lightweight Windows desktop application that turns near-real-time Himawari-8/9 satellite imagery into a live Earth wallpaper.
+> A lightweight Windows desktop application that turns near-real-time Himawari-8/9 satellite imagery into a live Earth wallpaper, with NASA and James Webb photo galleries.
 
 **🇬🇧 English · 🇷🇺 [Русская версия](README_RU.md)**
 
@@ -11,45 +11,86 @@
 [![Python](https://img.shields.io/badge/Python-3.11%2B-3776AB?style=flat-square&logo=python&logoColor=white)](https://www.python.org/)
 [![License](https://img.shields.io/badge/license-MIT-green?style=flat-square)](LICENSE)
 
-EarthLive Wallpaper automatically downloads the latest available Himawari satellite tiles, validates them, assembles them into a full-disk Earth image, and sets it as your Windows wallpaper.
+EarthLive Wallpaper downloads the latest available Himawari satellite tiles, validates them, assembles a full-disk Earth image, and applies it as a Windows wallpaper.
 
-It is designed to stay lightweight, unobtrusive, and easy to configure while running quietly in the system tray.
+## ✨ What's new in v1.6.0
 
-## ✨ What's improved in v1.5.0
+### 🚀 NASA Fotos
+- NASA Picture of the Day (APOD).
+- Preview, title and description.
+- RU / EN descriptions, with Russian selected by default.
+- Download with progress.
+- Set the downloaded photo as wallpaper.
+- Wallpaper modes: Fill, Fit, Stretch, Tile, Center and Span.
 
-- 🖼️ New **Wallpapers** tab: browse every previously downloaded wallpaper as a thumbnail gallery, re-apply any of them to the desktop, or permanently delete individual wallpapers (with a two-step confirm to prevent accidental deletion).
-- 🌐 Fixed several UI strings that stayed in English regardless of the selected language: the wallpaper mode dropdown (Fill/Fit/Stretch/Tile/Center/Span), the theme dropdown (Dark/Light/System), the app subtitle, the "Version"/"Author"/"Open on GitHub" labels in the About dialog, and error messages shown when applying a wallpaper failed.
-- 🧹 Removed a duplicated "Author" row in the About dialog.
-- 📌 Project metadata version is now synchronized to **1.5.0**.
+### 🔭 James Webb Fotos
+- Fresh images from the official NASA Webb Telescope Flickr album.
+- Preview thumbnails instead of loading full-size images for the gallery.
+- Photo descriptions from Flickr.
+- RU / EN descriptions, with Russian selected by default.
+- Asynchronous translation so the UI stays responsive.
+- Download progress and wallpaper installation.
 
-## What was in v1.4.0
-
-- 🧹 **Full-repository Ruff linting** replaces the previous selective-file check.
-- 🔎 **Security-focused Ruff rules (`S`)** are enabled to catch common unsafe Python patterns.
-- 🧠 **Full-repository mypy type checking** replaces the previous selective-file check.
-- 🧪 CI continues to gate changes with Ruff, mypy, and pytest on Windows.
-- 🖼️ New installations keep **FIT** as the default wallpaper display mode, preserving the complete Earth image without cropping.
-- 📁 Windows Installer installs **EarthLive Wallpaper** under `C:\Program Files\EarthLive Wallpaper`.
-- 🔒 Downloaded tiles are checked for valid image content, supported Content-Type, and safe size limits.
-- ⚙️ Configuration values are validated and invalid values fall back safely to defaults.
-- 🧵 Manual scheduler triggers are thread-safe and concurrent requests are safely coalesced.
-- 💾 Application state and configuration use atomic writes.
-
-> **Release note:** Windows binaries are intentionally **not digitally signed** at this time. This can cause Microsoft Defender SmartScreen to show an “unknown publisher” warning for the installer.
+### 🛰️ Existing EarthLive features
+- Near-real-time Himawari-8/9 imagery.
+- Automatic and manual wallpaper updates.
+- Wallpaper history and cache management.
+- Wallpapers gallery.
+- GIF timelapse creation.
+- Dark, light and system themes.
+- English and Russian UI.
+- Windows startup integration.
+- Portable and headless modes.
 
 ## ⬇️ Download for Windows
 
-**No Python installation is required for the packaged releases.**
+No Python installation is required for packaged releases.
 
-**[⬇️ Download Installer](https://github.com/justsmokeadfly/EarthLiveWallpaper/releases/latest/download/EarthLive-Setup-Latest.exe)** — recommended. Installs EarthLive Wallpaper to `C:\Program Files\EarthLive Wallpaper`.
+**[⬇️ Download Installer](https://github.com/justsmokeadfly/EarthLiveWallpaper/releases/latest/download/EarthLive-Setup-Latest.exe)** — recommended. Installs to `C:\Program Files\EarthLive Wallpaper`.
 
-Download **EarthLive Wallpaper v1.5.0** from the [GitHub Releases](https://github.com/justsmokeadfly/EarthLiveWallpaper/releases) page.
+Releases are built automatically by GitHub Actions from semantic version tags such as `v1.6.0`. Every release runs Ruff, Ruff security rules, mypy, pytest, PyInstaller and installer verification.
 
-- **Windows Installer** — recommended. Installs EarthLive Wallpaper to `C:\Program Files\EarthLive Wallpaper` with Start Menu integration and optional desktop shortcut/startup integration.
-- **Portable ZIP** — extract it anywhere and run `EarthLive.exe` without installation.
-- **Standalone EXE** — run the packaged `EarthLive.exe` directly.
+## 🖼️ Wallpaper modes
 
-Releases are built automatically by GitHub Actions from semantic version tags such as `v1.5.0`. Each release is validated with full-repository linting, type checking, tests, PyInstaller, and installer checks.
+NASA and James Webb photos can be installed using:
+
+- **Fill** — fill the screen, cropping when necessary.
+- **Fit** — show the full image without cropping.
+- **Stretch** — stretch to the screen.
+- **Tile** — repeat the image.
+- **Center** — keep the original size and center it.
+- **Span** — span across all monitors.
+
+## 🌐 Photo sources
+
+- **NASA APOD:** NASA Picture of the Day API.
+- **James Webb:** official NASA Webb Telescope Flickr album.
+
+## 🏗️ Architecture
+
+```text
+EarthLiveWallpaper/
+├── domain/             # Core entities and interfaces
+├── application/        # Use cases and scheduling
+├── infrastructure/    # Providers, NASA/Webb, downloads, storage and Win32
+├── ui/                 # CustomTkinter UI and system tray
+├── app.py              # Dependency wiring
+├── main.py             # Entry point
+└── tests/              # Automated tests
+```
+
+## 🧪 Development checks
+
+```powershell
+pip install -r requirements-dev.txt
+python -m ruff check .
+python -m mypy --ignore-missing-imports --follow-imports=skip .
+python -m pytest -q
+```
+
+## ℹ️ Release note
+
+Windows binaries are currently unsigned. SmartScreen may therefore show an “unknown publisher” warning for the installer.
 
 ## 👤 Author
 
@@ -60,4 +101,4 @@ Releases are built automatically by GitHub Actions from semantic version tags su
 
 ---
 
-<p align="center">Made for anyone who wants a living view of Earth on their desktop 🌍</p>
+<p align="center">Made for anyone who wants a living view of Earth and space on their desktop 🌍✨</p>
