@@ -7,9 +7,9 @@ import re
 from dataclasses import dataclass
 from pathlib import Path
 from urllib.parse import quote
-import xml.etree.ElementTree as ET
 
 import httpx
+from defusedxml import ElementTree as ET
 
 NASA_APOD_URL = "https://api.nasa.gov/planetary/apod"
 WEBB_FEED_URL = (
@@ -44,7 +44,7 @@ class NASAMediaService:
         return NASAPhoto(
             title=str(data.get("title", "NASA Picture of the Day")),
             description_en=str(data.get("explanation", "")),
-            image_url=str(data["hdurl"] or data["url"]),
+            image_url=str(data.get("hdurl") or data["url"]),
             source_url=str(data.get("url", "")),
             date=str(data.get("date", "")),
             copyright=str(data.get("copyright", "")),
