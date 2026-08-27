@@ -15,6 +15,7 @@ from config import ConfigPaths, load_config, save_config
 from domain.entities import AppConfig
 from domain.enums import UpdateOutcome, WallpaperMode
 from domain.interfaces import StateRepository, TimelapseGenerator
+from infrastructure.nasa.favorites_repository import FavoritesRepository
 from infrastructure.nasa.nasa_media_service import NASAMediaService, NASAPhoto
 from infrastructure.persistence.filesystem_cache_manager import FilesystemCacheManager
 from infrastructure.system.autostart import AutostartManager
@@ -60,6 +61,7 @@ class AppController:
         self._scheduler = SchedulerService(update_callback=self._on_scheduled_update)
         self._notifier: Callable[[UpdateResult], None] | None = None
         self._nasa_media = NASAMediaService()
+        self._favorites = FavoritesRepository(config_paths.data_dir)
 
     @property
     def wallpapers_dir(self) -> Path:
@@ -180,6 +182,15 @@ class AppController:
 
     def translate_nasa_description(self, text: str) -> str:
         return self._nasa_media.translate_to_russian(text)
+
+    def is_nasa_favorite(self, photo: NASAPhoto) -> bool:
+        return self._favorites.is_favorite(photo.source_url or photo.image_url)
+
+    def toggle_nasa_favorite(self, photo: NASAPhoto) -> bool:
+        return self._favorites.toggle(photo.source_url or photo.image_url)
+
+    def get_nasa_favorites(self) -> set[str]:
+        return self._favorites.list_favorites()
 
     def _on_scheduled_update(self, force: bool) -> UpdateResult:
         result = self._use_case.execute(self._config, force=force)
