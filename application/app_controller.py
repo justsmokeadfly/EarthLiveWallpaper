@@ -22,6 +22,7 @@ from logger import get_logger
 
 _logger = get_logger(__name__)
 
+
 @dataclass(frozen=True)
 class StatusSnapshot:
     last_image_timestamp: datetime | None
@@ -34,12 +35,20 @@ class StatusSnapshot:
     resolution: str
     total_updates_applied: int
 
+
 class AppController:
     """UI/CLI-facing facade coordinating config, scheduler, and use case."""
-    def __init__(self, config_paths: ConfigPaths, use_case: UpdateWallpaperUseCase,
-                 state_repository: StateRepository, cache_manager: FilesystemCacheManager,
-                 autostart_manager: AutostartManager, timelapse_generator: TimelapseGenerator,
-                 progress_tracker: ProgressTracker) -> None:
+
+    def __init__(
+        self,
+        config_paths: ConfigPaths,
+        use_case: UpdateWallpaperUseCase,
+        state_repository: StateRepository,
+        cache_manager: FilesystemCacheManager,
+        autostart_manager: AutostartManager,
+        timelapse_generator: TimelapseGenerator,
+        progress_tracker: ProgressTracker,
+    ) -> None:
         self._config_paths = config_paths
         self._use_case = use_case
         self._state_repository = state_repository
@@ -57,40 +66,64 @@ class AppController:
         return self._config_paths.wallpapers_dir
 
     def start(self) -> None:
-        self._scheduler.start(check_interval_hours=self._config.check_interval_hours, run_immediately=False)
+        self._scheduler.start(
+            check_interval_hours=self._config.check_interval_hours,
+            run_immediately=False,
+        )
+
     def stop(self) -> None:
         self._scheduler.stop()
+
     def get_config(self) -> AppConfig:
         return self._config
+
     def update_config(self, new_config: AppConfig) -> None:
-        interval_changed = new_config.check_interval_hours != self._config.check_interval_hours
+        interval_changed = (
+            new_config.check_interval_hours != self._config.check_interval_hours
+        )
         self._config = new_config
         save_config(self._config_paths, new_config)
-        (self._autostart_manager.enable() if new_config.autostart else self._autostart_manager.disable())
+        if new_config.autostart:
+            self._autostart_manager.enable()
+        else:
+            self._autostart_manager.disable()
         if interval_changed:
             self._scheduler.stop()
-            self._scheduler.start(check_interval_hours=new_config.check_interval_hours, run_immediately=False)
+            self._scheduler.start(
+                check_interval_hours=new_config.check_interval_hours,
+                run_immediately=False,
+            )
+
     def is_autostart_enabled(self) -> bool:
         return self._autostart_manager.is_enabled()
+
     def trigger_update_now(self) -> None:
         self._scheduler.trigger_now(force=True)
+
     def set_notifier(self, notifier: Callable[[UpdateResult], None] | None) -> None:
         self._notifier = notifier
+
     def is_paused(self) -> bool:
         return self._config.paused
+
     def set_paused(self, paused: bool) -> None:
         self._config = replace(self._config, paused=paused)
         save_config(self._config_paths, self._config)
+
     def get_history(self) -> list[Path]:
         state = self._state_repository.load()
         return [Path(p) for p in state.history if Path(p).exists()]
+
     def reapply_from_history(self, file_path: Path) -> bool:
         return self._use_case.reapply(file_path, self._config.wallpaper_mode)
+
     def apply_external_wallpaper(self, file_path: Path, mode: WallpaperMode) -> bool:
         return self._use_case.reapply(file_path, mode)
+
     def delete_from_history(self, file_path: Path) -> bool:
         if file_path.exists():
-            try: file_path.unlink()
+            try:
+                file_path.unlink()
             except OSError:
                 _logger.exception("Failed to delete wallpaper file: %s", file_path)
                 return False
@@ -100,29 +133,59 @@ class AppController:
             state.history.remove(path_str)
             self._state_repository.save(state)
         return True
-    def create_timelapse(self, output_path: Path, frame_duration_ms: int = 200) -> bool:
-        return self._timelapse_generator.create(list(reversed(self.get_history())), output_path, frame_duration_ms)
+
+    def create_timelapse(
+        self,
+        output_path: Path,
+        frame_duration_ms: int = 200,
+    ) -> bool:
+        return self._timelapse_generator.create(
+            list(reversed(self.get_history())),
+            output_path,
+            frame_duration_ms,
+        )
+
     def get_progress(self) -> ProgressSnapshot:
         return self._progress_tracker.get()
+
     def get_status_snapshot(self) -> StatusSnapshot:
         state = self._state_repository.load()
         last_result = self._scheduler.get_last_result()
-        return StatusSnapshot(state.last_timestamp, state.last_update_at, state.last_successful_update_at,
-                              self._scheduler.get_next_run_at(), last_result.outcome if last_result else state.last_outcome,
-                              last_result.message if last_result else "", self._cache_manager.get_cache_size_bytes(),
-                              self._config.grid_size.value, state.total_updates_applied)
+        return StatusSnapshot(
+            state.last_timestamp,
+            state.last_update_at,
+            state.last_successful_update_at,
+            self._scheduler.get_next_run_at(),
+            last_result.outcome if last_result else state.last_outcome,
+            last_result.message if last_result else "",
+            self._cache_manager.get_cache_size_bytes(),
+            self._config.grid_size.value,
+            state.total_updates_applied,
+        )
+
     def get_nasa_apod(self) -> NASAPhoto:
         return self._nasa_media.get_apod()
+
     def get_webb_photos(self, limit: int = 24) -> list[NASAPhoto]:
         return self._nasa_media.get_webb_photos(limit)
-    def download_nasa_photo(self, photo: NASAPhoto, destination: Path,
-                            progress: Callable[[int, int], None] | None = None) -> Path:
-        return self._nasa_media.download(photo, destination, progress)
+
+    def download_nasa_photo(
+        self,
+        photo: NASAPhoto,
+        destination: Path,
+        progress: Callable[[int, int], None] | None = None,
+        image_url: str | None = None,
+    ) -> Path:
+        return self._nasa_media.download(photo, destination, progress, image_url)
+
     def translate_nasa_description(self, text: str) -> str:
         return self._nasa_media.translate_to_russian(text)
+
     def _on_scheduled_update(self, force: bool) -> UpdateResult:
         result = self._use_case.execute(self._config, force=force)
         if self._notifier is not None:
-            try: self._notifier(result)
-            except Exception: _logger.exception("Notifier callback raised unexpectedly.")
+            try:
+                self._notifier(result)
+            except Exception:
+                _logger.exception("Notifier callback raised unexpectedly.")
         return result
