@@ -142,7 +142,7 @@ class NASAPhotosDialog(ctk.CTkToplevel):
     def _populate(self) -> None:
         query = self._search.get().strip().lower()
         favorites_only = bool(self._favorites_only.get())
-        filtered = []
+        filtered: list[NASAPhoto] = []
         for photo in self._photos:
             text = f"{photo.title} {photo.description_en}".lower()
             is_favorite = self._controller.is_nasa_favorite(photo)
@@ -169,11 +169,13 @@ class NASAPhotosDialog(ctk.CTkToplevel):
         card.pack(fill="x", pady=7)
         body = ctk.CTkFrame(card, fg_color="transparent")
         body.pack(fill="x", padx=10, pady=10)
-
         preview = ctk.CTkLabel(body, text="Превью…", width=360, height=210)
         preview.pack(side="left", padx=(0, 12))
-        threading.Thread(target=self._load_preview, args=(photo, preview), daemon=True).start()
-
+        threading.Thread(
+            target=self._load_preview,
+            args=(photo, preview),
+            daemon=True,
+        ).start()
         info = ctk.CTkFrame(body, fg_color="transparent")
         info.pack(side="left", fill="both", expand=True)
         title_row = ctk.CTkFrame(info, fg_color="transparent")
@@ -196,7 +198,6 @@ class NASAPhotosDialog(ctk.CTkToplevel):
         )
         favorite.pack(side="right")
         self._favorite_buttons[photo.title] = favorite
-
         description = (
             photo.description_en
             if self._language.get() == "EN"
@@ -264,18 +265,10 @@ class NASAPhotosDialog(ctk.CTkToplevel):
             preview_name = "preview_" + _safe_name(photo.title) + ".jpg"
             path = self._controller.wallpapers_dir / ".previews" / preview_name
             if not path.exists():
-                self._controller.download_nasa_photo(
-                    photo,
-                    path,
-                    image_url=preview_url,
-                )
+                self._controller.download_nasa_photo(photo, path, image_url=preview_url)
             with Image.open(path) as image:
                 image.thumbnail(_THUMB, Image.LANCZOS)
-                img = ctk.CTkImage(
-                    light_image=image.copy(),
-                    dark_image=image.copy(),
-                    size=image.size,
-                )
+                img = ctk.CTkImage(light_image=image.copy(), dark_image=image.copy(), size=image.size)
             self.after(0, lambda: self._set_preview(label, img))
         except Exception:
             self.after(0, lambda: label.configure(text="Превью недоступно"))
