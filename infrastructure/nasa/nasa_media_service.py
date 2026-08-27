@@ -16,6 +16,7 @@ WEBB_FEED_URL = (
     "https://www.flickr.com/services/feeds/photoset.gne"
     "?set=72177720331299130&nsid=nasawebbtelescope&lang=en-us&format=rss_200"
 )
+ProgressCallback = Callable[[int, int], None]
 
 
 @dataclass(frozen=True)
@@ -72,11 +73,13 @@ class NASAMediaService:
         self,
         photo: NASAPhoto,
         destination: Path,
-        progress: Callable[[int, int], None] | None = None,
+        progress: ProgressCallback | None = None,
+        image_url: str | None = None,
     ) -> Path:
         destination.parent.mkdir(parents=True, exist_ok=True)
+        url = image_url or photo.image_url
         with httpx.stream(
-            "GET", photo.image_url, timeout=self._timeout, follow_redirects=True
+            "GET", url, timeout=self._timeout, follow_redirects=True
         ) as response:
             response.raise_for_status()
             total = int(response.headers.get("content-length", "0") or 0)
