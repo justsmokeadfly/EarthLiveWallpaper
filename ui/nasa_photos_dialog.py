@@ -36,9 +36,12 @@ class NASAPhotosDialog(ctk.CTkToplevel):
     def _build(self) -> None:
         header = ctk.CTkFrame(self, fg_color="transparent")
         header.pack(fill="x", padx=theme.PADDING, pady=theme.PADDING)
-        ctk.CTkLabel(header, text="🔭 James Webb Fotos" if self._webb else "🚀 NASA Fotos",
-                     font=(theme.FONT_FAMILY, theme.FONT_SIZE_TITLE, "bold"),
-                     text_color=theme.COLOR_TEXT_PRIMARY).pack(side="left")
+        ctk.CTkLabel(
+            header,
+            text="🔭 James Webb Fotos" if self._webb else "🚀 NASA Fotos",
+            font=(theme.FONT_FAMILY, theme.FONT_SIZE_TITLE, "bold"),
+            text_color=theme.COLOR_TEXT_PRIMARY,
+        ).pack(side="left")
         self._language = ctk.CTkSegmentedButton(header, values=["RU", "EN"], command=self._language_changed)
         self._language.set("RU")
         self._language.pack(side="right")
@@ -54,10 +57,11 @@ class NASAPhotosDialog(ctk.CTkToplevel):
 
     def _load_worker(self) -> None:
         try:
-            photos = [self._controller.get_apod()] if not self._webb else self._controller.get_webb_photos()
+            photos = [self._controller.get_nasa_apod()] if not self._webb else self._controller.get_webb_photos()
             self.after(0, lambda: self._loaded(photos))
         except Exception as exc:
-            self.after(0, lambda: self._failed(str(exc)))
+            message = str(exc)
+            self.after(0, lambda message=message: self._failed(message))
 
     def _loaded(self, photos: list[NASAPhoto]) -> None:
         self._progress.stop()
@@ -73,7 +77,8 @@ class NASAPhotosDialog(ctk.CTkToplevel):
         self._populate()
 
     def _populate(self) -> None:
-        for child in self._scroll.winfo_children(): child.destroy()
+        for child in self._scroll.winfo_children():
+            child.destroy()
         self._refs.clear()
         for photo in self._photos:
             self._add_card(photo)
@@ -88,21 +93,37 @@ class NASAPhotosDialog(ctk.CTkToplevel):
         threading.Thread(target=self._load_preview, args=(photo, preview), daemon=True).start()
         info = ctk.CTkFrame(body, fg_color="transparent")
         info.pack(side="left", fill="both", expand=True)
-        ctk.CTkLabel(info, text=photo.title, anchor="w", justify="left",
-                     wraplength=420, font=(theme.FONT_FAMILY, theme.FONT_SIZE_BODY, "bold"),
-                     text_color=theme.COLOR_TEXT_PRIMARY).pack(fill="x", pady=(0, 6))
+        ctk.CTkLabel(
+            info,
+            text=photo.title,
+            anchor="w",
+            justify="left",
+            wraplength=420,
+            font=(theme.FONT_FAMILY, theme.FONT_SIZE_BODY, "bold"),
+            text_color=theme.COLOR_TEXT_PRIMARY,
+        ).pack(fill="x", pady=(0, 6))
         description = photo.description_en
         if self._language.get() == "RU":
             description = self._controller.translate_nasa_description(description)
-        ctk.CTkLabel(info, text=description, anchor="nw", justify="left", wraplength=420,
-                     text_color=theme.COLOR_TEXT_SECONDARY).pack(fill="both", expand=True)
+        ctk.CTkLabel(
+            info,
+            text=description,
+            anchor="nw",
+            justify="left",
+            wraplength=420,
+            text_color=theme.COLOR_TEXT_SECONDARY,
+        ).pack(fill="both", expand=True)
         mode = ctk.CTkComboBox(info, values=["Fill", "Fit", "Stretch", "Tile", "Center", "Span"])
         mode.set("Fill")
         mode.pack(fill="x", pady=(8, 5))
         actions = ctk.CTkFrame(info, fg_color="transparent")
         actions.pack(fill="x")
         ctk.CTkButton(actions, text="Скачать", command=lambda p=photo: self._download(p)).pack(side="left", padx=(0, 5))
-        ctk.CTkButton(actions, text="Установить как обои", command=lambda p=photo, m=mode: self._install(p, m)).pack(side="left")
+        ctk.CTkButton(
+            actions,
+            text="Установить как обои",
+            command=lambda p=photo, m=mode: self._install(p, m),
+        ).pack(side="left")
 
     def _load_preview(self, photo: NASAPhoto, label: ctk.CTkLabel) -> None:
         try:
@@ -127,8 +148,14 @@ class NASAPhotosDialog(ctk.CTkToplevel):
     def _install(self, photo: NASAPhoto, mode_box: ctk.CTkComboBox) -> None:
         path = self._unique_path(photo)
         self._controller.download_nasa_photo(photo, path)
-        mode_map = {"Fill": WallpaperMode.FILL, "Fit": WallpaperMode.FIT, "Stretch": WallpaperMode.STRETCH,
-                    "Tile": WallpaperMode.TILE, "Center": WallpaperMode.CENTER, "Span": WallpaperMode.SPAN}
+        mode_map = {
+            "Fill": WallpaperMode.FILL,
+            "Fit": WallpaperMode.FIT,
+            "Stretch": WallpaperMode.STRETCH,
+            "Tile": WallpaperMode.TILE,
+            "Center": WallpaperMode.CENTER,
+            "Span": WallpaperMode.SPAN,
+        }
         if self._controller.apply_external_wallpaper(path, mode_map[mode_box.get()]):
             self._status.configure(text="Обои установлены!", text_color=theme.COLOR_SUCCESS)
         else:
