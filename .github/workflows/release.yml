@@ -16,6 +16,7 @@ permissions:
 
 jobs:
   release:
+    if: ${{ github.ref_type == 'tag' || github.event_name == 'workflow_dispatch' }}
     runs-on: windows-latest
     env:
       RELEASE_TAG: ${{ github.event_name == 'workflow_dispatch' && inputs.release_tag || github.ref_name }}
@@ -139,7 +140,7 @@ jobs:
             - Official NASA Webb Flickr album
 
             ### Windows downloads
-            - `EarthLive-Setup-${{ env:RELEASE_VERSION }}.exe` — Windows Installer (versioned)
+            - `EarthLive-Setup-${{ env.RELEASE_VERSION }}.exe` — Windows Installer (versioned)
             - `EarthLive-Setup-Latest.exe` — Windows Installer (stable download link)
             - `EarthLive-${{ env.RELEASE_VERSION }}-windows-x64-portable.zip` — Portable version
             - `EarthLive.exe` — standalone executable
