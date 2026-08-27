@@ -4,6 +4,7 @@ from __future__ import annotations
 import os
 from collections.abc import Callable
 from datetime import datetime
+from typing import Any
 
 import customtkinter as ctk
 
@@ -202,7 +203,13 @@ class MainWindow(ctk.CTk):
         )
         self._pause_button.configure(text=self._pause_button_text())
 
-    def _make_action_button(self, parent, key, command, column):
+    def _make_action_button(
+        self,
+        parent: Any,
+        key: str,
+        command: Callable[[], None],
+        column: int,
+    ) -> Any:
         button = ctk.CTkButton(
             parent,
             text=self._tr.get(key),
@@ -214,7 +221,13 @@ class MainWindow(ctk.CTk):
         button.grid(row=0, column=column, sticky="ew", padx=3)
         return button
 
-    def _make_literal_action_button(self, parent, text, command, column):
+    def _make_literal_action_button(
+        self,
+        parent: Any,
+        text: str,
+        command: Callable[[], None],
+        column: int,
+    ) -> Any:
         button = ctk.CTkButton(
             parent,
             text=text,
@@ -226,7 +239,13 @@ class MainWindow(ctk.CTk):
         button.grid(row=0, column=column, sticky="ew", padx=3)
         return button
 
-    def _make_secondary_button(self, parent, key, command, column):
+    def _make_secondary_button(
+        self,
+        parent: Any,
+        key: str,
+        command: Callable[[], None],
+        column: int,
+    ) -> Any:
         button = ctk.CTkButton(
             parent,
             text=self._tr.get(key),
@@ -240,18 +259,18 @@ class MainWindow(ctk.CTk):
         button.grid(row=0, column=column, sticky="ew", padx=3)
         return button
 
-    def _schedule_refresh(self):
+    def _schedule_refresh(self) -> None:
         self._refresh_status()
         self.after(_STATUS_REFRESH_MS, self._schedule_refresh)
 
-    def _refresh_status(self):
+    def _refresh_status(self) -> None:
         try:
             self._apply_snapshot(self._controller.get_status_snapshot())
             self._apply_progress(self._controller.get_progress())
         except Exception:
             _logger.exception("Failed to refresh main-window status.")
 
-    def _apply_progress(self, progress: ProgressSnapshot):
+    def _apply_progress(self, progress: ProgressSnapshot) -> None:
         if progress.stage == ProgressStage.IDLE:
             self._progress_bar.configure(mode="determinate")
             self._progress_bar.stop()
@@ -282,7 +301,7 @@ class MainWindow(ctk.CTk):
             self._progress_bar.configure(mode="indeterminate")
             self._progress_bar.start()
 
-    def _apply_snapshot(self, snapshot: StatusSnapshot):
+    def _apply_snapshot(self, snapshot: StatusSnapshot) -> None:
         outcome = snapshot.last_outcome
         color = (
             _OUTCOME_COLORS.get(outcome, theme.COLOR_TEXT_SECONDARY)
@@ -308,13 +327,13 @@ class MainWindow(ctk.CTk):
         for key, value in values.items():
             self._info_labels[key].configure(text=value)
 
-    def _on_update_now_clicked(self):
+    def _on_update_now_clicked(self) -> None:
         self._update_button.configure(
             state="disabled", text=self._tr.get("button.updating")
         )
         self._controller.trigger_update_now()
 
-    def _on_open_folder_clicked(self):
+    def _on_open_folder_clicked(self) -> None:
         folder = self._controller.wallpapers_dir
         folder.mkdir(parents=True, exist_ok=True)
         try:
@@ -323,7 +342,7 @@ class MainWindow(ctk.CTk):
         except OSError:
             _logger.exception("Failed to open wallpapers folder: %s", folder)
 
-    def _on_settings_clicked(self):
+    def _on_settings_clicked(self) -> None:
         SettingsDialog(
             self,
             self._controller,
@@ -331,28 +350,28 @@ class MainWindow(ctk.CTk):
             on_language_changed=self._refresh_ui_language,
         ).grab_set()
 
-    def _on_about_clicked(self):
+    def _on_about_clicked(self) -> None:
         AboutDialog(self, self._tr).grab_set()
 
-    def _on_wallpapers_clicked(self):
+    def _on_wallpapers_clicked(self) -> None:
         WallpapersDialog(self, self._controller, self._tr).grab_set()
 
-    def _on_nasa_clicked(self):
+    def _on_nasa_clicked(self) -> None:
         NASAPhotosDialog(self, self._controller, self._tr, webb=False)
 
-    def _on_webb_clicked(self):
+    def _on_webb_clicked(self) -> None:
         NASAPhotosDialog(self, self._controller, self._tr, webb=True)
 
-    def _pause_button_text(self):
+    def _pause_button_text(self) -> str:
         return self._tr.get(
             "button.resume" if self._controller.is_paused() else "button.pause"
         )
 
-    def _on_pause_toggle_clicked(self):
+    def _on_pause_toggle_clicked(self) -> None:
         self._controller.set_paused(not self._controller.is_paused())
         self._pause_button.configure(text=self._pause_button_text())
 
-    def _refresh_ui_language(self):
+    def _refresh_ui_language(self) -> None:
         self._tr.set_language(self._controller.get_config().language)
         self.title(self._tr.get("app_title"))
         self._update_button.configure(text=self._tr.get("button.update_now"))
