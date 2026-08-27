@@ -4,9 +4,9 @@ from __future__ import annotations
 
 import html
 import re
+from collections.abc import Callable
 from dataclasses import dataclass
 from pathlib import Path
-from urllib.parse import quote
 
 import httpx
 from defusedxml import ElementTree as ET
@@ -68,9 +68,16 @@ class NASAMediaService:
             photos.append(NASAPhoto(title, description, image_url, source))
         return photos
 
-    def download(self, photo: NASAPhoto, destination: Path, progress=None) -> Path:
+    def download(
+        self,
+        photo: NASAPhoto,
+        destination: Path,
+        progress: Callable[[int, int], None] | None = None,
+    ) -> Path:
         destination.parent.mkdir(parents=True, exist_ok=True)
-        with httpx.stream("GET", photo.image_url, timeout=self._timeout, follow_redirects=True) as response:
+        with httpx.stream(
+            "GET", photo.image_url, timeout=self._timeout, follow_redirects=True
+        ) as response:
             response.raise_for_status()
             total = int(response.headers.get("content-length", "0") or 0)
             current = 0
