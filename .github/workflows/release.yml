@@ -7,7 +7,7 @@ on:
   workflow_dispatch:
     inputs:
       release_tag:
-        description: "Version tag to release (for example v1.4.0)"
+        description: "Version tag to release (for example v1.6.0)"
         required: true
         type: string
 
@@ -123,8 +123,23 @@ jobs:
           body: |
             ## 🌍 EarthLive Wallpaper ${{ env.RELEASE_TAG }}
 
+            ### ✨ What's new
+            - Added **NASA Fotos** with NASA Picture of the Day (APOD).
+            - Added **James Webb Fotos** from the official NASA Webb Flickr album.
+            - Added image previews directly in the application.
+            - Added **RU / EN** descriptions, with Russian selected by default.
+            - Added asynchronous translation so the UI remains responsive.
+            - Added download progress for NASA and James Webb images.
+            - Added **Set as wallpaper** for downloaded NASA/Webb images.
+            - Added wallpaper modes: **Fill, Fit, Stretch, Tile, Center, Span**.
+            - Kept the existing Himawari satellite wallpaper functionality unchanged.
+
+            ### 🪐 Sources
+            - NASA Picture of the Day (APOD)
+            - Official NASA Webb Flickr album
+
             ### Windows downloads
-            - `EarthLive-Setup-${{ env.RELEASE_VERSION }}.exe` — Windows Installer (versioned)
+            - `EarthLive-Setup-${{ env:RELEASE_VERSION }}.exe` — Windows Installer (versioned)
             - `EarthLive-Setup-Latest.exe` — Windows Installer (stable download link)
             - `EarthLive-${{ env.RELEASE_VERSION }}-windows-x64-portable.zip` — Portable version
             - `EarthLive.exe` — standalone executable
