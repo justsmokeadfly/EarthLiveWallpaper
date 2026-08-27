@@ -1,4 +1,4 @@
-# 🌍 EarthLive Wallpaper v1.6.0
+# 🌍 EarthLive Wallpaper v1.7.0
 
 > A lightweight Windows desktop application that turns near-real-time Himawari-8/9 satellite imagery into a live Earth wallpaper, with NASA and James Webb photo galleries.
 
@@ -13,19 +13,22 @@
 
 EarthLive Wallpaper downloads the latest available Himawari satellite tiles, validates them, assembles a full-disk Earth image, and applies it as a Windows wallpaper.
 
-## ✨ What's new in v1.6.0
+## ✨ What's new in v1.7.0
 
 ### 🚀 NASA Fotos
 - NASA Picture of the Day (APOD).
+- Search by title and description.
+- ⭐ Favorites with local persistent storage.
 - Preview, title and description.
 - RU / EN descriptions, with Russian selected by default.
-- Download with progress.
+- Download with a real progress bar.
 - Set the downloaded photo as wallpaper.
-- Wallpaper modes: Fill, Fit, Stretch, Tile, Center and Span.
 
 ### 🔭 James Webb Fotos
 - Fresh images from the official NASA Webb Telescope Flickr album.
-- Preview thumbnails instead of loading full-size images for the gallery.
+- Search by title and description.
+- ⭐ Favorites with local persistent storage.
+- Lightweight preview thumbnails instead of loading the original gallery image.
 - Photo descriptions from Flickr.
 - RU / EN descriptions, with Russian selected by default.
 - Asynchronous translation so the UI stays responsive.
@@ -48,7 +51,7 @@ No Python installation is required for packaged releases.
 
 **[⬇️ Download Installer](https://github.com/justsmokeadfly/EarthLiveWallpaper/releases/latest/download/EarthLive-Setup-Latest.exe)** — recommended. Installs to `C:\Program Files\EarthLive Wallpaper`.
 
-Releases are built automatically by GitHub Actions from semantic version tags such as `v1.6.0`. Every release runs Ruff, Ruff security rules, mypy, pytest, PyInstaller and installer verification.
+Releases are built automatically by GitHub Actions from semantic version tags such as `v1.7.0`. Every release runs Ruff, Ruff security rules, mypy, pytest, PyInstaller and installer verification.
 
 ## 🖼️ Wallpaper modes
 
@@ -66,13 +69,17 @@ NASA and James Webb photos can be installed using:
 - **NASA APOD:** NASA Picture of the Day API.
 - **James Webb:** official NASA Webb Telescope Flickr album.
 
+## 🔎 Gallery tools
+
+NASA and Webb galleries now include a local search field and an **⭐ Favorites** filter. Favorites are saved locally and do not require an account or cloud service.
+
 ## 🏗️ Architecture
 
 ```text
 EarthLiveWallpaper/
 ├── domain/             # Core entities and interfaces
 ├── application/        # Use cases and scheduling
-├── infrastructure/    # Providers, NASA/Webb, downloads, storage and Win32
+├── infrastructure/    # Providers, NASA/Webb, downloads, favorites, storage and Win32
 ├── ui/                 # CustomTkinter UI and system tray
 ├── app.py              # Dependency wiring
 ├── main.py             # Entry point
