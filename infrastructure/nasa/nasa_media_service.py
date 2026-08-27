@@ -27,6 +27,7 @@ class NASAPhoto:
     source_url: str
     date: str = ""
     copyright: str = ""
+    thumbnail_url: str = ""
 
 
 class NASAMediaService:
@@ -42,13 +43,15 @@ class NASAMediaService:
             data = response.json()
         if data.get("media_type") != "image" or not data.get("url"):
             raise RuntimeError("NASA APOD did not return an image.")
+        image_url = str(data.get("hdurl") or data["url"])
         return NASAPhoto(
             title=str(data.get("title", "NASA Picture of the Day")),
             description_en=str(data.get("explanation", "")),
-            image_url=str(data.get("hdurl") or data["url"]),
+            image_url=image_url,
             source_url=str(data.get("url", "")),
             date=str(data.get("date", "")),
             copyright=str(data.get("copyright", "")),
+            thumbnail_url=image_url,
         )
 
     def get_webb_photos(self, limit: int = 24) -> list[NASAPhoto]:
@@ -62,11 +65,21 @@ class NASAMediaService:
             title = html.unescape((item.findtext("title") or "").strip())
             description = html.unescape(_strip_html(item.findtext("description") or ""))
             media = item.find("media:content", ns)
+            thumbnail = item.find("media:thumbnail", ns)
             image_url = media.attrib.get("url", "") if media is not None else ""
+            thumbnail_url = thumbnail.attrib.get("url", "") if thumbnail is not None else image_url
             source = item.findtext("link") or image_url
             if not title or not image_url:
                 continue
-            photos.append(NASAPhoto(title, description, image_url, source))
+            photos.append(
+                NASAPhoto(
+                    title=title,
+                    description_en=description,
+                    image_url=image_url,
+                    source_url=source,
+                    thumbnail_url=thumbnail_url,
+                )
+            )
         return photos
 
     def download(
