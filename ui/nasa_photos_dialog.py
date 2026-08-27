@@ -1,7 +1,6 @@
 """NASA APOD and James Webb photo browser dialog."""
 from __future__ import annotations
 
-import re
 import threading
 from collections.abc import Callable
 from pathlib import Path
@@ -261,14 +260,22 @@ class NASAPhotosDialog(ctk.CTkToplevel):
 
     def _load_preview(self, photo: NASAPhoto, label: ctk.CTkLabel) -> None:
         try:
-            preview_url = _preview_url(photo.image_url, self._webb)
+            preview_url = photo.thumbnail_url or photo.image_url
             preview_name = "preview_" + _safe_name(photo.title) + ".jpg"
             path = self._controller.wallpapers_dir / ".previews" / preview_name
             if not path.exists():
-                self._controller.download_nasa_photo(photo, path, image_url=preview_url)
+                self._controller.download_nasa_photo(
+                    photo,
+                    path,
+                    image_url=preview_url,
+                )
             with Image.open(path) as image:
                 image.thumbnail(_THUMB, Image.LANCZOS)
-                img = ctk.CTkImage(light_image=image.copy(), dark_image=image.copy(), size=image.size)
+                img = ctk.CTkImage(
+                    light_image=image.copy(),
+                    dark_image=image.copy(),
+                    size=image.size,
+                )
             self.after(0, lambda: self._set_preview(label, img))
         except Exception:
             self.after(0, lambda: label.configure(text="Превью недоступно"))
@@ -323,7 +330,11 @@ class NASAPhotosDialog(ctk.CTkToplevel):
     def _set_transfer_progress(self, fraction: float) -> None:
         self._progress.set(max(0.0, min(1.0, fraction)))
 
-    def _transfer_done(self, success_text: str | None, success_callback: Callable[[], None] | None) -> None:
+    def _transfer_done(
+        self,
+        success_text: str | None,
+        success_callback: Callable[[], None] | None,
+    ) -> None:
         self._set_busy(False)
         self._progress.set(1.0)
         if success_callback is not None:
@@ -346,12 +357,6 @@ class NASAPhotosDialog(ctk.CTkToplevel):
     def _unique_path(self, photo: NASAPhoto) -> Path:
         suffix = ".png" if ".png" in photo.image_url.lower() else ".jpg"
         return self._controller.wallpapers_dir / f"nasa_{_safe_name(photo.title)}{suffix}"
-
-
-def _preview_url(image_url: str, webb: bool) -> str:
-    if not webb or "flickr" not in image_url.lower():
-        return image_url
-    return re.sub(r"(_[a-z])(?=\.[a-z0-9]+$)", "_z", image_url, flags=re.IGNORECASE)
 
 
 def _safe_name(value: str) -> str:
