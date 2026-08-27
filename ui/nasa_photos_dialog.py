@@ -41,6 +41,7 @@ class NASAPhotosDialog(ctk.CTkToplevel):
         self._photos: list[NASAPhoto] = []
         self._refs: list[ctk.CTkImage] = []
         self._descriptions: dict[str, str] = {}
+        self._description_labels: dict[str, ctk.CTkLabel] = {}
         self._busy = 0
         self.title("James Webb Fotos" if webb else "NASA Fotos")
         self.geometry("980x760")
@@ -69,10 +70,10 @@ class NASAPhotosDialog(ctk.CTkToplevel):
         self._language.pack(side="right")
         self._progress = ctk.CTkProgressBar(
             self,
-            mode="determinate",
+            mode="indeterminate",
             corner_radius=theme.CORNER_RADIUS,
         )
-        self._progress.set(0.0)
+        self._progress.start()
         self._progress.pack(fill="x", padx=theme.PADDING, pady=(0, 6))
         self._status = ctk.CTkLabel(
             self,
@@ -105,6 +106,7 @@ class NASAPhotosDialog(ctk.CTkToplevel):
             self.after(0, lambda message=message: self._failed(message))
 
     def _loaded(self, photos: list[NASAPhoto]) -> None:
+        self._progress.stop()
         self._photos = photos
         self._status.configure(text=f"Найдено фотографий: {len(photos)}")
         self._populate()
@@ -112,6 +114,7 @@ class NASAPhotosDialog(ctk.CTkToplevel):
         self._load_descriptions_async()
 
     def _failed(self, message: str) -> None:
+        self._progress.stop()
         self._set_busy(False)
         self._status.configure(
             text=f"Ошибка загрузки: {message}",
@@ -119,12 +122,22 @@ class NASAPhotosDialog(ctk.CTkToplevel):
         )
 
     def _language_changed(self, value: str) -> None:
-        self._populate()
+        if value == "EN":
+            for photo in self._photos:
+                label = self._description_labels.get(photo.title)
+                if label is not None:
+                    label.configure(text=photo.description_en)
+            return
+        for photo in self._photos:
+            label = self._description_labels.get(photo.title)
+            if label is not None:
+                label.configure(text=self._descriptions.get(photo.title, photo.description_en))
 
     def _populate(self) -> None:
         for child in self._scroll.winfo_children():
             child.destroy()
         self._refs.clear()
+        self._description_labels.clear()
         for photo in self._photos:
             self._add_card(photo)
 
@@ -158,19 +171,22 @@ class NASAPhotosDialog(ctk.CTkToplevel):
             text_color=theme.COLOR_TEXT_PRIMARY,
         ).pack(fill="x", pady=(0, 6))
 
-        description = self._descriptions.get(photo.title, photo.description_en)
-        self._description_label(info, description)
-        self._add_actions(info, photo)
-
-    def _description_label(self, parent: ctk.CTkFrame, description: str) -> None:
-        ctk.CTkLabel(
-            parent,
+        description = (
+            photo.description_en
+            if self._language.get() == "EN"
+            else self._descriptions.get(photo.title, photo.description_en)
+        )
+        description_label = ctk.CTkLabel(
+            info,
             text=description,
             anchor="nw",
             justify="left",
             wraplength=460,
             text_color=theme.COLOR_TEXT_SECONDARY,
-        ).pack(fill="both", expand=True)
+        )
+        description_label.pack(fill="both", expand=True)
+        self._description_labels[photo.title] = description_label
+        self._add_actions(info, photo)
 
     def _add_actions(self, parent: ctk.CTkFrame, photo: NASAPhoto) -> None:
         mode = ctk.CTkComboBox(parent, values=list(_MODES))
@@ -192,28 +208,37 @@ class NASAPhotosDialog(ctk.CTkToplevel):
     def _load_descriptions_async(self) -> None:
         if self._language.get() != "RU":
             return
-        descriptions = [photo for photo in self._photos if photo.description_en]
+        for photo in self._photos:
+            if not photo.description_en:
+                continue
+            threading.Thread(
+                target=self._translate_worker,
+                args=(photo,),
+                daemon=True,
+            ).start()
 
-        def worker() -> None:
-            for photo in descriptions:
-                try:
-                    translated = self._controller.translate_nasa_description(photo.description_en)
-                except Exception:
-                    translated = photo.description_en
-                self.after(0, lambda p=photo, text=translated: self._description_ready(p, text))
-
-        threading.Thread(target=worker, daemon=True).start()
+    def _translate_worker(self, photo: NASAPhoto) -> None:
+        try:
+            translated = self._controller.translate_nasa_description(photo.description_en)
+        except Exception:
+            translated = photo.description_en
+        self.after(0, lambda p=photo, text=translated: self._description_ready(p, text))
 
     def _description_ready(self, photo: NASAPhoto, text: str) -> None:
         self._descriptions[photo.title] = text
-        self._populate()
+        if self._language.get() != "RU":
+            return
+        label = self._description_labels.get(photo.title)
+        if label is not None:
+            label.configure(text=text)
 
     def _load_preview(self, photo: NASAPhoto, label: ctk.CTkLabel) -> None:
         try:
             preview_url = _preview_url(photo.image_url, self._webb)
             preview_name = "preview_" + _safe_name(photo.title) + ".jpg"
             path = self._controller.wallpapers_dir / ".previews" / preview_name
-            self._controller.download_nasa_photo(photo, path)
+            if not path.exists():
+                self._controller.download_nasa_photo(photo, path, image_url=preview_url)
             with Image.open(path) as image:
                 image.thumbnail(_THUMB, Image.LANCZOS)
                 img = ctk.CTkImage(
@@ -263,7 +288,13 @@ class NASAPhotosDialog(ctk.CTkToplevel):
         success_callback: Callable[[], None] | None = None,
     ) -> None:
         self._set_busy(True)
-        self._status.configure(text="Скачивание…", text_color=theme.COLOR_TEXT_SECONDARY)
+        self._progress.configure(mode="determinate")
+        self._progress.set(0.0)
+        self._progress.stop()
+        self._status.configure(
+            text="Скачивание…",
+            text_color=theme.COLOR_TEXT_SECONDARY,
+        )
 
         def worker() -> None:
             try:
@@ -292,10 +323,14 @@ class NASAPhotosDialog(ctk.CTkToplevel):
         if success_callback is not None:
             success_callback()
         elif success_text:
-            self._status.configure(text=success_text, text_color=theme.COLOR_SUCCESS)
+            self._status.configure(
+                text=success_text,
+                text_color=theme.COLOR_SUCCESS,
+            )
 
     def _transfer_failed(self, message: str) -> None:
         self._set_busy(False)
+        self._progress.set(0.0)
         self._status.configure(
             text=f"Ошибка скачивания: {message}",
             text_color=theme.COLOR_ERROR,
@@ -304,22 +339,22 @@ class NASAPhotosDialog(ctk.CTkToplevel):
     def _set_busy(self, busy: bool) -> None:
         self._busy = max(0, self._busy + (1 if busy else -1))
         state = "disabled" if self._busy else "normal"
-        try:
-            self._language.configure(state=state)
-        except Exception:
-            pass
+        self._language.configure(state=state)
 
     def _unique_path(self, photo: NASAPhoto) -> Path:
-        suffix = ".jpg"
-        if ".png" in photo.image_url.lower():
-            suffix = ".png"
+        suffix = ".png" if ".png" in photo.image_url.lower() else ".jpg"
         return self._controller.wallpapers_dir / f"nasa_{_safe_name(photo.title)}{suffix}"
 
 
 def _preview_url(image_url: str, webb: bool) -> str:
     if not webb or "flickr" not in image_url.lower():
         return image_url
-    return re.sub(r"(_[a-z])(?=\.[a-z0-9]+$)", "_z", image_url, flags=re.IGNORECASE)
+    return re.sub(
+        r"(_[a-z])(?=\.[a-z0-9]+$)",
+        "_z",
+        image_url,
+        flags=re.IGNORECASE,
+    )
 
 
 def _safe_name(value: str) -> str:
