@@ -1,4 +1,4 @@
-"""NASA APOD and James Webb Flickr photo sources."""
+"""NASA APOD, James Webb, and Hubble photo sources."""
 
 from __future__ import annotations
 
@@ -16,6 +16,10 @@ WEBB_FEED_URL = (
     "https://www.flickr.com/services/feeds/photoset.gne"
     "?set=72177720331299130&nsid=nasawebbtelescope&lang=en-us&format=rss_200"
 )
+HUBBLE_FEED_URL = (
+    "https://www.flickr.com/services/feeds/photoset.gne"
+    "?set=72157667717916603&nsid=nasahubble&lang=en-us&format=rss_200"
+)
 _MYMEMORY_URL = "https://api.mymemory.translated.net/get"
 _MYMEMORY_MAX_BYTES = 450
 ProgressCallback = Callable[[int, int], None]
@@ -30,10 +34,11 @@ class NASAPhoto:
     date: str = ""
     copyright: str = ""
     thumbnail_url: str = ""
+    source: str = "nasa"
 
 
 class NASAMediaService:
-    """Fetch NASA APOD and the official NASA Webb Flickr album."""
+    """Fetch NASA APOD plus official Webb and Hubble Flickr galleries."""
 
     def __init__(self, timeout: float = 30.0) -> None:
         self._timeout = timeout
@@ -53,11 +58,20 @@ class NASAMediaService:
             source_url=str(data.get("url", "")),
             date=str(data.get("date", "")),
             copyright=str(data.get("copyright", "")),
+            source="nasa",
         )
 
     def get_webb_photos(self, limit: int = 24) -> list[NASAPhoto]:
+        return self._get_flickr_photos(WEBB_FEED_URL, "webb", limit)
+
+    def get_hubble_photos(self, limit: int = 24) -> list[NASAPhoto]:
+        return self._get_flickr_photos(HUBBLE_FEED_URL, "hubble", limit)
+
+    def _get_flickr_photos(
+        self, feed_url: str, source: str, limit: int
+    ) -> list[NASAPhoto]:
         with httpx.Client(timeout=self._timeout, follow_redirects=True) as client:
-            response = client.get(WEBB_FEED_URL)
+            response = client.get(feed_url)
             response.raise_for_status()
         root = ET.fromstring(response.content)
         photos: list[NASAPhoto] = []
@@ -69,7 +83,7 @@ class NASAMediaService:
             thumbnail = item.find("media:thumbnail", ns)
             image_url = media.attrib.get("url", "") if media is not None else ""
             thumbnail_url = thumbnail.attrib.get("url", "") if thumbnail is not None else ""
-            source = item.findtext("link") or image_url
+            source_url = item.findtext("link") or image_url
             if not title or not image_url:
                 continue
             photos.append(
@@ -77,8 +91,9 @@ class NASAMediaService:
                     title=title,
                     description_en=description,
                     image_url=image_url,
-                    source_url=source,
+                    source_url=source_url,
                     thumbnail_url=thumbnail_url,
+                    source=source,
                 )
             )
         return photos
@@ -122,11 +137,7 @@ class NASAMediaService:
                 for chunk in chunks:
                     response = client.get(
                         _MYMEMORY_URL,
-                        params={
-                            "q": chunk,
-                            "langpair": "en|ru",
-                            "mt": "1",
-                        },
+                        params={"q": chunk, "langpair": "en|ru", "mt": "1"},
                     )
                     response.raise_for_status()
                     payload = response.json()
