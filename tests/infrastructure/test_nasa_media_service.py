@@ -22,13 +22,22 @@ _FLICKR_XML = b"""
 """
 
 
-def test_webb_uses_flickr_thumbnail_and_source(monkeypatch) -> None:
-    service = NASAMediaService()
+def _mock_client(monkeypatch):
+    real_client = httpx.Client
 
     def handler(request: httpx.Request) -> httpx.Response:
         return httpx.Response(200, content=_FLICKR_XML)
 
-    monkeypatch.setattr(httpx, "Client", lambda *args, **kwargs: httpx.Client(transport=httpx.MockTransport(handler)))
+    monkeypatch.setattr(
+        httpx,
+        "Client",
+        lambda *args, **kwargs: real_client(transport=httpx.MockTransport(handler)),
+    )
+
+
+def test_webb_uses_flickr_thumbnail_and_source(monkeypatch) -> None:
+    _mock_client(monkeypatch)
+    service = NASAMediaService()
     photos = service.get_webb_photos(limit=1)
 
     assert len(photos) == 1
@@ -39,12 +48,8 @@ def test_webb_uses_flickr_thumbnail_and_source(monkeypatch) -> None:
 
 
 def test_hubble_uses_same_flickr_parser(monkeypatch) -> None:
+    _mock_client(monkeypatch)
     service = NASAMediaService()
-
-    def handler(request: httpx.Request) -> httpx.Response:
-        return httpx.Response(200, content=_FLICKR_XML)
-
-    monkeypatch.setattr(httpx, "Client", lambda *args, **kwargs: httpx.Client(transport=httpx.MockTransport(handler)))
     photos = service.get_hubble_photos(limit=1)
 
     assert len(photos) == 1
