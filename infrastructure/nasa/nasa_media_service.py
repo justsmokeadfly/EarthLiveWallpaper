@@ -13,10 +13,18 @@ from defusedxml import ElementTree as ET
 
 NASA_APOD_URL = "https://api.nasa.gov/planetary/apod"
 WEBB_FEED_URL = (
+    "https://api.flickr.com/services/feeds/photoset.gne"
+    "?set=72177720331299130&nsid=nasawebbtelescope&lang=en-us&format=rss_200"
+)
+WEBB_FEED_FALLBACK_URL = (
     "https://www.flickr.com/services/feeds/photoset.gne"
     "?set=72177720331299130&nsid=nasawebbtelescope&lang=en-us&format=rss_200"
 )
 HUBBLE_FEED_URL = (
+    "https://api.flickr.com/services/feeds/photoset.gne"
+    "?set=72157667717916603&nsid=nasahubble&lang=en-us&format=rss_200"
+)
+HUBBLE_FEED_FALLBACK_URL = (
     "https://www.flickr.com/services/feeds/photoset.gne"
     "?set=72157667717916603&nsid=nasahubble&lang=en-us&format=rss_200"
 )
@@ -62,18 +70,34 @@ class NASAMediaService:
         )
 
     def get_webb_photos(self, limit: int = 24) -> list[NASAPhoto]:
-        return self._get_flickr_photos(WEBB_FEED_URL, "webb", limit)
+        return self._get_flickr_photos(
+            (WEBB_FEED_URL, WEBB_FEED_FALLBACK_URL), "webb", limit
+        )
 
     def get_hubble_photos(self, limit: int = 24) -> list[NASAPhoto]:
-        return self._get_flickr_photos(HUBBLE_FEED_URL, "hubble", limit)
+        return self._get_flickr_photos(
+            (HUBBLE_FEED_URL, HUBBLE_FEED_FALLBACK_URL), "hubble", limit
+        )
 
     def _get_flickr_photos(
-        self, feed_url: str, source: str, limit: int
+        self, feed_urls: tuple[str, str], source: str, limit: int
     ) -> list[NASAPhoto]:
+        response_content: bytes | None = None
+        last_error: Exception | None = None
         with httpx.Client(timeout=self._timeout, follow_redirects=True) as client:
-            response = client.get(feed_url)
-            response.raise_for_status()
-        root = ET.fromstring(response.content)
+            for feed_url in feed_urls:
+                try:
+                    response = client.get(feed_url)
+                    response.raise_for_status()
+                    response_content = response.content
+                    break
+                except (httpx.HTTPError, ValueError) as exc:
+                    last_error = exc
+
+        if response_content is None:
+            raise RuntimeError(f"Failed to load Flickr {source} feed.") from last_error
+
+        root = ET.fromstring(response_content)
         photos: list[NASAPhoto] = []
         ns = {"media": "http://search.yahoo.com/mrss/"}
         for item in root.findall(".//item")[:limit]:
@@ -96,6 +120,8 @@ class NASAMediaService:
                     source=source,
                 )
             )
+        if not photos:
+            raise RuntimeError(f"Flickr {source} feed contained no usable photos.")
         return photos
 
     def download(
