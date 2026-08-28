@@ -15,6 +15,7 @@ from logger import get_logger
 from ui import theme
 from ui.about_dialog import AboutDialog
 from ui.i18n import Translator
+from ui.monitors_dialog import MonitorsDialog
 from ui.nasa_photos_dialog import NASAPhotosDialog
 from ui.settings_dialog import SettingsDialog
 from ui.wallpapers_dialog import WallpapersDialog
@@ -80,40 +81,14 @@ class MainWindow(ctk.CTk):
     def _build_widgets(self) -> None:
         header = ctk.CTkFrame(self, fg_color="transparent")
         header.pack(fill="x", padx=theme.PADDING, pady=(theme.PADDING, 4))
-        ctk.CTkLabel(
-            header,
-            text="🌍",
-            font=(theme.FONT_FAMILY, 30),
-            text_color=theme.COLOR_TEXT_PRIMARY,
-        ).pack(side="left", padx=(0, 10))
+        ctk.CTkLabel(header, text="🌍", font=(theme.FONT_FAMILY, 30), text_color=theme.COLOR_TEXT_PRIMARY).pack(side="left", padx=(0, 10))
         title_frame = ctk.CTkFrame(header, fg_color="transparent")
         title_frame.pack(side="left", fill="x", expand=True)
-        ctk.CTkLabel(
-            title_frame,
-            text=self._tr.get("app_header"),
-            font=(theme.FONT_FAMILY, theme.FONT_SIZE_TITLE, "bold"),
-            text_color=theme.COLOR_TEXT_PRIMARY,
-            anchor="w",
-        ).pack(fill="x")
-        ctk.CTkLabel(
-            title_frame,
-            text=self._tr.get("app_subtitle"),
-            font=(theme.FONT_FAMILY, theme.FONT_SIZE_SMALL),
-            text_color=theme.COLOR_TEXT_SECONDARY,
-            anchor="w",
-        ).pack(fill="x")
-        self._status_dot = ctk.CTkLabel(
-            self,
-            text=f"●  {self._tr.get('status_checking')}",
-            font=(theme.FONT_FAMILY, theme.FONT_SIZE_BODY, "bold"),
-            text_color=theme.COLOR_TEXT_SECONDARY,
-        )
+        ctk.CTkLabel(title_frame, text=self._tr.get("app_header"), font=(theme.FONT_FAMILY, theme.FONT_SIZE_TITLE, "bold"), text_color=theme.COLOR_TEXT_PRIMARY, anchor="w").pack(fill="x")
+        ctk.CTkLabel(title_frame, text=self._tr.get("app_subtitle"), font=(theme.FONT_FAMILY, theme.FONT_SIZE_SMALL), text_color=theme.COLOR_TEXT_SECONDARY, anchor="w").pack(fill="x")
+        self._status_dot = ctk.CTkLabel(self, text=f"●  {self._tr.get('status_checking')}", font=(theme.FONT_FAMILY, theme.FONT_SIZE_BODY, "bold"), text_color=theme.COLOR_TEXT_SECONDARY)
         self._status_dot.pack(pady=(2, theme.PADDING))
-        info = ctk.CTkFrame(
-            self,
-            fg_color=theme.COLOR_SURFACE,
-            corner_radius=theme.CORNER_RADIUS,
-        )
+        info = ctk.CTkFrame(self, fg_color=theme.COLOR_SURFACE, corner_radius=theme.CORNER_RADIUS)
         info.pack(fill="x", padx=theme.PADDING, pady=(0, 10))
         self._info_labels = {}
         self._info_titles = {}
@@ -121,141 +96,60 @@ class MainWindow(ctk.CTk):
             row = ctk.CTkFrame(info, fg_color="transparent")
             row.grid(row=i // 2, column=i % 2, sticky="ew", padx=10, pady=7)
             info.grid_columnconfigure(i % 2, weight=1)
-            title = ctk.CTkLabel(
-                row,
-                text=self._tr.get(f"label.{key}"),
-                font=(theme.FONT_FAMILY, theme.FONT_SIZE_SMALL),
-                text_color=theme.COLOR_TEXT_SECONDARY,
-                anchor="w",
-            )
+            title = ctk.CTkLabel(row, text=self._tr.get(f"label.{key}"), font=(theme.FONT_FAMILY, theme.FONT_SIZE_SMALL), text_color=theme.COLOR_TEXT_SECONDARY, anchor="w")
             title.pack(fill="x")
             self._info_titles[key] = title
-            value = ctk.CTkLabel(
-                row,
-                text="—",
-                font=(theme.FONT_FAMILY, theme.FONT_SIZE_BODY, "bold"),
-                text_color=theme.COLOR_TEXT_PRIMARY,
-                anchor="w",
-            )
+            value = ctk.CTkLabel(row, text="—", font=(theme.FONT_FAMILY, theme.FONT_SIZE_BODY, "bold"), text_color=theme.COLOR_TEXT_PRIMARY, anchor="w")
             value.pack(fill="x", pady=(1, 0))
             self._info_labels[key] = value
-        self._message_label = ctk.CTkLabel(
-            self,
-            text="",
-            font=(theme.FONT_FAMILY, theme.FONT_SIZE_SMALL),
-            text_color=theme.COLOR_TEXT_SECONDARY,
-            wraplength=theme.WINDOW_WIDTH - 2 * theme.PADDING,
-        )
+        self._message_label = ctk.CTkLabel(self, text="", font=(theme.FONT_FAMILY, theme.FONT_SIZE_SMALL), text_color=theme.COLOR_TEXT_SECONDARY, wraplength=theme.WINDOW_WIDTH - 2 * theme.PADDING)
         self._message_label.pack(padx=theme.PADDING, pady=(0, 5))
-        self._progress_bar = ctk.CTkProgressBar(
-            self,
-            progress_color=theme.COLOR_ACCENT,
-            corner_radius=theme.CORNER_RADIUS,
-        )
+        self._progress_bar = ctk.CTkProgressBar(self, progress_color=theme.COLOR_ACCENT, corner_radius=theme.CORNER_RADIUS)
         self._progress_bar.set(0.0)
         self._progress_bar.pack(fill="x", padx=theme.PADDING, pady=(0, 3))
-        self._progress_label = ctk.CTkLabel(
-            self,
-            text="",
-            font=(theme.FONT_FAMILY, theme.FONT_SIZE_SMALL),
-            text_color=theme.COLOR_TEXT_SECONDARY,
-        )
+        self._progress_label = ctk.CTkLabel(self, text="", font=(theme.FONT_FAMILY, theme.FONT_SIZE_SMALL), text_color=theme.COLOR_TEXT_SECONDARY)
         self._progress_label.pack(pady=(0, 8))
-        self._update_button = ctk.CTkButton(
-            self,
-            text=self._tr.get("button.update_now"),
-            command=self._on_update_now_clicked,
-            height=42,
-            font=(theme.FONT_FAMILY, theme.FONT_SIZE_BODY, "bold"),
-            fg_color=theme.COLOR_ACCENT,
-            hover_color=theme.COLOR_ACCENT_HOVER,
-            corner_radius=theme.CORNER_RADIUS,
-        )
+        self._update_button = ctk.CTkButton(self, text=self._tr.get("button.update_now"), command=self._on_update_now_clicked, height=42, font=(theme.FONT_FAMILY, theme.FONT_SIZE_BODY, "bold"), fg_color=theme.COLOR_ACCENT, hover_color=theme.COLOR_ACCENT_HOVER, corner_radius=theme.CORNER_RADIUS)
         self._update_button.pack(fill="x", padx=theme.PADDING, pady=(0, 8))
+
         actions = ctk.CTkFrame(self, fg_color="transparent")
         actions.pack(fill="x", padx=theme.PADDING, pady=(0, 8))
         for column in range(5):
             actions.grid_columnconfigure(column, weight=1)
-        self._wallpapers_button = self._make_action_button(
-            actions, "button.wallpapers", self._on_wallpapers_clicked, 0
-        )
-        self._nasa_button = self._make_literal_action_button(
-            actions, "NASA Fotos", self._on_nasa_clicked, 1
-        )
-        self._webb_button = self._make_literal_action_button(
-            actions, "James Webb Fotos", self._on_webb_clicked, 2
-        )
-        self._settings_button = self._make_action_button(
-            actions, "button.settings", self._on_settings_clicked, 3
-        )
-        self._about_button = self._make_action_button(
-            actions, "button.about", self._on_about_clicked, 4
-        )
+        self._wallpapers_button = self._make_action_button(actions, "button.wallpapers", self._on_wallpapers_clicked, 0)
+        self._nasa_button = self._make_literal_action_button(actions, "NASA Fotos", self._on_nasa_clicked, 1)
+        self._webb_button = self._make_literal_action_button(actions, "James Webb Fotos", self._on_webb_clicked, 2)
+        self._settings_button = self._make_action_button(actions, "button.settings", self._on_settings_clicked, 3)
+        self._about_button = self._make_action_button(actions, "button.about", self._on_about_clicked, 4)
+
+        space_actions = ctk.CTkFrame(self, fg_color="transparent")
+        space_actions.pack(fill="x", padx=theme.PADDING, pady=(0, 8))
+        for column in range(3):
+            space_actions.grid_columnconfigure(column, weight=1)
+        self._hubble_button = self._make_literal_action_button(space_actions, "Hubble Fotos", self._on_hubble_clicked, 0)
+        self._mix_button = self._make_literal_action_button(space_actions, "🌌 Космический микс", self._on_space_mix_clicked, 1)
+        self._monitors_button = self._make_literal_action_button(space_actions, "🖥️ Разные обои", self._on_monitors_clicked, 2)
+
         secondary = ctk.CTkFrame(self, fg_color="transparent")
         secondary.pack(fill="x", padx=theme.PADDING, pady=(0, theme.PADDING))
         secondary.grid_columnconfigure(0, weight=1)
         secondary.grid_columnconfigure(1, weight=1)
-        self._open_folder_button = self._make_secondary_button(
-            secondary, "button.open_folder", self._on_open_folder_clicked, 0
-        )
-        self._pause_button = self._make_secondary_button(
-            secondary, "button.pause", self._on_pause_toggle_clicked, 1
-        )
+        self._open_folder_button = self._make_secondary_button(secondary, "button.open_folder", self._on_open_folder_clicked, 0)
+        self._pause_button = self._make_secondary_button(secondary, "button.pause", self._on_pause_toggle_clicked, 1)
         self._pause_button.configure(text=self._pause_button_text())
 
-    def _make_action_button(
-        self,
-        parent: Any,
-        key: str,
-        command: Callable[[], None],
-        column: int,
-    ) -> Any:
-        button = ctk.CTkButton(
-            parent,
-            text=self._tr.get(key),
-            command=command,
-            fg_color=theme.COLOR_SURFACE_ALT,
-            hover_color=theme.COLOR_SURFACE,
-            corner_radius=theme.CORNER_RADIUS,
-        )
+    def _make_action_button(self, parent: Any, key: str, command: Callable[[], None], column: int) -> Any:
+        button = ctk.CTkButton(parent, text=self._tr.get(key), command=command, fg_color=theme.COLOR_SURFACE_ALT, hover_color=theme.COLOR_SURFACE, corner_radius=theme.CORNER_RADIUS)
         button.grid(row=0, column=column, sticky="ew", padx=3)
         return button
 
-    def _make_literal_action_button(
-        self,
-        parent: Any,
-        text: str,
-        command: Callable[[], None],
-        column: int,
-    ) -> Any:
-        button = ctk.CTkButton(
-            parent,
-            text=text,
-            command=command,
-            fg_color=theme.COLOR_SURFACE_ALT,
-            hover_color=theme.COLOR_SURFACE,
-            corner_radius=theme.CORNER_RADIUS,
-        )
+    def _make_literal_action_button(self, parent: Any, text: str, command: Callable[[], None], column: int) -> Any:
+        button = ctk.CTkButton(parent, text=text, command=command, fg_color=theme.COLOR_SURFACE_ALT, hover_color=theme.COLOR_SURFACE, corner_radius=theme.CORNER_RADIUS)
         button.grid(row=0, column=column, sticky="ew", padx=3)
         return button
 
-    def _make_secondary_button(
-        self,
-        parent: Any,
-        key: str,
-        command: Callable[[], None],
-        column: int,
-    ) -> Any:
-        button = ctk.CTkButton(
-            parent,
-            text=self._tr.get(key),
-            command=command,
-            fg_color="transparent",
-            border_width=1,
-            border_color=theme.COLOR_SURFACE_ALT,
-            hover_color=theme.COLOR_SURFACE,
-            corner_radius=theme.CORNER_RADIUS,
-        )
+    def _make_secondary_button(self, parent: Any, key: str, command: Callable[[], None], column: int) -> Any:
+        button = ctk.CTkButton(parent, text=self._tr.get(key), command=command, fg_color="transparent", border_width=1, border_color=theme.COLOR_SURFACE_ALT, hover_color=theme.COLOR_SURFACE, corner_radius=theme.CORNER_RADIUS)
         button.grid(row=0, column=column, sticky="ew", padx=3)
         return button
 
@@ -277,20 +171,12 @@ class MainWindow(ctk.CTk):
             self._progress_bar.set(0.0)
             self._progress_label.configure(text="")
             if self._update_button.cget("state") == "disabled":
-                self._update_button.configure(
-                    state="normal", text=self._tr.get("button.update_now")
-                )
+                self._update_button.configure(state="normal", text=self._tr.get("button.update_now"))
             return
-        self._update_button.configure(
-            state="disabled", text=self._tr.get("button.updating")
-        )
+        self._update_button.configure(state="disabled", text=self._tr.get("button.updating"))
         key = f"progress.{progress.stage.value}"
         if progress.stage == ProgressStage.DOWNLOADING:
-            self._progress_label.configure(
-                text=self._tr.get(
-                    key, current=str(progress.current), total=str(progress.total)
-                )
-            )
+            self._progress_label.configure(text=self._tr.get(key, current=str(progress.current), total=str(progress.total)))
         else:
             self._progress_label.configure(text=self._tr.get(key))
         if progress.is_determinate:
@@ -303,16 +189,8 @@ class MainWindow(ctk.CTk):
 
     def _apply_snapshot(self, snapshot: StatusSnapshot) -> None:
         outcome = snapshot.last_outcome
-        color = (
-            _OUTCOME_COLORS.get(outcome, theme.COLOR_TEXT_SECONDARY)
-            if outcome
-            else theme.COLOR_TEXT_SECONDARY
-        )
-        label = (
-            self._tr.outcome_label(outcome.value)
-            if outcome
-            else self._tr.get("status_waiting")
-        )
+        color = _OUTCOME_COLORS.get(outcome, theme.COLOR_TEXT_SECONDARY) if outcome else theme.COLOR_TEXT_SECONDARY
+        label = self._tr.outcome_label(outcome.value) if outcome else self._tr.get("status_waiting")
         self._status_dot.configure(text=f"●  {label}", text_color=color)
         self._message_label.configure(text=snapshot.last_message)
         never = self._tr.get("label.never")
@@ -328,27 +206,19 @@ class MainWindow(ctk.CTk):
             self._info_labels[key].configure(text=value)
 
     def _on_update_now_clicked(self) -> None:
-        self._update_button.configure(
-            state="disabled", text=self._tr.get("button.updating")
-        )
+        self._update_button.configure(state="disabled", text=self._tr.get("button.updating"))
         self._controller.trigger_update_now()
 
     def _on_open_folder_clicked(self) -> None:
         folder = self._controller.wallpapers_dir
         folder.mkdir(parents=True, exist_ok=True)
         try:
-            # Windows Explorer hand-off; the path is a trusted local application directory.
             os.startfile(str(folder))  # noqa: S606
         except OSError:
             _logger.exception("Failed to open wallpapers folder: %s", folder)
 
     def _on_settings_clicked(self) -> None:
-        SettingsDialog(
-            self,
-            self._controller,
-            self._tr,
-            on_language_changed=self._refresh_ui_language,
-        ).grab_set()
+        SettingsDialog(self, self._controller, self._tr, on_language_changed=self._refresh_ui_language).grab_set()
 
     def _on_about_clicked(self) -> None:
         AboutDialog(self, self._tr).grab_set()
@@ -357,15 +227,31 @@ class MainWindow(ctk.CTk):
         WallpapersDialog(self, self._controller, self._tr).grab_set()
 
     def _on_nasa_clicked(self) -> None:
-        NASAPhotosDialog(self, self._controller, self._tr, webb=False)
+        NASAPhotosDialog(self, self._controller, self._tr, source="nasa")
 
     def _on_webb_clicked(self) -> None:
-        NASAPhotosDialog(self, self._controller, self._tr, webb=True)
+        NASAPhotosDialog(self, self._controller, self._tr, source="webb")
+
+    def _on_hubble_clicked(self) -> None:
+        NASAPhotosDialog(self, self._controller, self._tr, source="hubble")
+
+    def _on_space_mix_clicked(self) -> None:
+        self._mix_button.configure(state="disabled", text="🌌 Смешивание…")
+        def worker() -> None:
+            success = self._controller.trigger_space_mix_now()
+            self.after(0, lambda: self._space_mix_done(success))
+        import threading
+        threading.Thread(target=worker, daemon=True).start()
+
+    def _space_mix_done(self, success: bool) -> None:
+        self._mix_button.configure(state="normal", text="🌌 Космический микс")
+        self._message_label.configure(text="Космические обои установлены!" if success else "Не удалось обновить космические обои.")
+
+    def _on_monitors_clicked(self) -> None:
+        MonitorsDialog(self, self._controller, self._tr).grab_set()
 
     def _pause_button_text(self) -> str:
-        return self._tr.get(
-            "button.resume" if self._controller.is_paused() else "button.pause"
-        )
+        return self._tr.get("button.resume" if self._controller.is_paused() else "button.pause")
 
     def _on_pause_toggle_clicked(self) -> None:
         self._controller.set_paused(not self._controller.is_paused())
