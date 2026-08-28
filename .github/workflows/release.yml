@@ -7,7 +7,7 @@ on:
   workflow_dispatch:
     inputs:
       release_tag:
-        description: "Version tag to release (for example v1.6.0)"
+        description: "Version tag to release (for example v1.8.0)"
         required: true
         type: string
 
@@ -127,17 +127,23 @@ jobs:
             ### ✨ What's new
             - Added **NASA Fotos** with NASA Picture of the Day (APOD).
             - Added **James Webb Fotos** from the official NASA Webb Flickr album.
-            - Added image previews directly in the application.
-            - Added **RU / EN** descriptions, with Russian selected by default.
-            - Added asynchronous translation so the UI remains responsive.
-            - Added download progress for NASA and James Webb images.
-            - Added **Set as wallpaper** for downloaded NASA/Webb images.
-            - Added wallpaper modes: **Fill, Fit, Stretch, Tile, Center, Span**.
-            - Kept the existing Himawari satellite wallpaper functionality unchanged.
+            - Added **Hubble Fotos** from the official NASA Hubble Flickr collection.
+            - Added search by title and description for NASA/Webb/Hubble galleries.
+            - Added local **⭐ Favorites** for space photos.
+            - Added official Flickr thumbnails so galleries do not download original images just to display previews.
+            - Added RU / EN photo descriptions with Russian selected by default.
+            - Added asynchronous translation and translation caching.
+            - Added real download progress for space photos.
+            - Added **Set as wallpaper** with Fill, Fit, Stretch, Tile, Center and Span modes.
+            - Added optional automatic **🌌 Cosmic Mix** across NASA APOD, James Webb and Hubble.
+            - Added manual Cosmic Mix trigger from the main window.
+            - Added **🖥️ per-monitor wallpapers** for Windows, allowing a different saved image on each monitor.
+            - Kept the existing Himawari satellite wallpaper workflow unchanged.
 
             ### 🪐 Sources
             - NASA Picture of the Day (APOD)
-            - Official NASA Webb Flickr album
+            - Official NASA Webb Telescope Flickr album
+            - Official NASA Hubble Flickr collection
 
             ### Windows downloads
             - `EarthLive-Setup-${{ env.RELEASE_VERSION }}.exe` — Windows Installer (versioned)
