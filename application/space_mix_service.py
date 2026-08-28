@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-import random
+import secrets
 import threading
 from datetime import UTC, datetime
 from pathlib import Path
@@ -45,7 +45,7 @@ class SpaceMixService:
             photos = [self._media.get_apod()]
             photos.extend(self._media.get_webb_photos(limit=12))
             photos.extend(self._media.get_hubble_photos(limit=12))
-            photo = random.choice(photos)
+            photo = secrets.choice(photos)
             suffix = ".png" if ".png" in photo.image_url.lower() else ".jpg"
             stamp = datetime.now(UTC).strftime("%Y%m%d_%H%M%S")
             path = self._wallpapers_dir / f"space_mix_{photo.source}_{stamp}{suffix}"
