@@ -7,7 +7,8 @@ import threading
 from datetime import UTC, datetime
 from pathlib import Path
 
-from infrastructure.nasa.nasa_media_service import NASAMediaService, NASAPhoto
+from domain.enums import WallpaperMode
+from infrastructure.nasa.nasa_media_service import NASAMediaService
 from infrastructure.wallpaper.windows_wallpaper_setter import WindowsWallpaperSetter
 from logger import get_logger
 
@@ -49,7 +50,7 @@ class SpaceMixService:
             stamp = datetime.now(UTC).strftime("%Y%m%d_%H%M%S")
             path = self._wallpapers_dir / f"space_mix_{photo.source}_{stamp}{suffix}"
             self._media.download(photo, path)
-            return self._setter.apply(path, __import__('domain.enums', fromlist=['WallpaperMode']).WallpaperMode.FILL)
+            return self._setter.apply(path, WallpaperMode.FIT)
         except Exception:
             _logger.exception("Cosmic Mix update failed.")
             return False
