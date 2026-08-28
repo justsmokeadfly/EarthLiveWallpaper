@@ -15,31 +15,42 @@ _IID = "{B92B56A9-8B55-4E14-9A89-0199BBB6F93B}"
 
 
 def get_monitor_count() -> int:
-    """Return the number of active Windows monitors."""
+    """Return the number of monitors known to Windows."""
     if sys.platform != "win32":
         return 0
-    return _create_desktop_wallpaper().GetMonitorDevicePathCount()
+    import comtypes
+
+    comtypes.CoInitialize()
+    try:
+        return _create_desktop_wallpaper().GetMonitorDevicePathCount()
+    finally:
+        comtypes.CoUninitialize()
 
 
 def set_wallpapers_per_monitor(wallpapers: dict[int, Path]) -> bool:
     """Apply one image to each requested zero-based monitor index."""
     if sys.platform != "win32" or not wallpapers:
         return False
-    wallpaper = _create_desktop_wallpaper()
-    count = wallpaper.GetMonitorDevicePathCount()
-    if any(index < 0 or index >= count for index in wallpapers):
-        return False
+    import comtypes
+
+    comtypes.CoInitialize()
     try:
+        desktop_wallpaper = _create_desktop_wallpaper()
+        count = desktop_wallpaper.GetMonitorDevicePathCount()
+        if any(index < 0 or index >= count for index in wallpapers):
+            return False
         for index, path in wallpapers.items():
             if not path.exists():
                 _logger.error("Wallpaper does not exist: %s", path)
                 return False
-            monitor_id = wallpaper.GetMonitorDevicePathAt(index)
-            wallpaper.SetWallpaper(monitor_id, str(path.resolve()))
+            monitor_id = desktop_wallpaper.GetMonitorDevicePathAt(index)
+            desktop_wallpaper.SetWallpaper(monitor_id, str(path.resolve()))
+        return True
     except (OSError, RuntimeError):
         _logger.exception("Failed to set per-monitor wallpapers.")
         return False
-    return True
+    finally:
+        comtypes.CoUninitialize()
 
 
 def _create_desktop_wallpaper():
@@ -64,7 +75,7 @@ def _create_desktop_wallpaper():
                 HRESULT,
                 "GetMonitorDevicePathAt",
                 (["in"], UINT, "monitorIndex"),
-                (["out"], POINTER(LPWSTR), "monitorID"),
+                (["out", "string"], POINTER(LPWSTR), "monitorID"),
             ),
             COMMETHOD(
                 [],
@@ -80,7 +91,7 @@ def _create_desktop_wallpaper():
         def GetMonitorDevicePathAt(self, monitor_index: int) -> str:
             monitor_id = LPWSTR()
             self.__com_GetMonitorDevicePathAt(UINT(monitor_index), pointer(monitor_id))
-            return str(monitor_id.value)
+            return str(monitor_id.value or "")
 
         def GetMonitorDevicePathCount(self) -> int:
             count = UINT()
