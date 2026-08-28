@@ -6,6 +6,7 @@ import sys
 from ctypes import HRESULT, POINTER, pointer
 from ctypes.wintypes import LPCWSTR, LPWSTR, UINT
 from pathlib import Path
+from typing import Any, cast
 
 from logger import get_logger
 
@@ -22,7 +23,8 @@ def get_monitor_count() -> int:
 
     comtypes.CoInitialize()
     try:
-        return _create_desktop_wallpaper().GetMonitorDevicePathCount()
+        desktop_wallpaper = _create_desktop_wallpaper()
+        return int(desktop_wallpaper.GetMonitorDevicePathCount())
     finally:
         comtypes.CoUninitialize()
 
@@ -36,7 +38,7 @@ def set_wallpapers_per_monitor(wallpapers: dict[int, Path]) -> bool:
     comtypes.CoInitialize()
     try:
         desktop_wallpaper = _create_desktop_wallpaper()
-        count = desktop_wallpaper.GetMonitorDevicePathCount()
+        count = int(desktop_wallpaper.GetMonitorDevicePathCount())
         if any(index < 0 or index >= count for index in wallpapers):
             return False
         for index, path in wallpapers.items():
@@ -53,7 +55,7 @@ def set_wallpapers_per_monitor(wallpapers: dict[int, Path]) -> bool:
         comtypes.CoUninitialize()
 
 
-def _create_desktop_wallpaper():
+def _create_desktop_wallpaper() -> Any:
     if sys.platform != "win32":
         raise RuntimeError("Per-monitor wallpapers require Windows.")
 
@@ -98,4 +100,4 @@ def _create_desktop_wallpaper():
             self.__com_GetMonitorDevicePathCount(pointer(count))
             return int(count.value)
 
-    return comtypes.CoCreateInstance(GUID(_CLSID), interface=DesktopWallpaper)
+    return cast(Any, comtypes.CoCreateInstance(GUID(_CLSID), interface=DesktopWallpaper))
