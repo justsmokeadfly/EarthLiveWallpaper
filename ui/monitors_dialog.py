@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from pathlib import Path
+
 import customtkinter as ctk
 
 from application.app_controller import AppController
@@ -59,7 +61,7 @@ class MonitorsDialog(ctk.CTkToplevel):
     def _apply(self) -> None:
         if not self._choices:
             return
-        mapping = {index: __import__('pathlib').Path(var.get()) for index, var in enumerate(self._choices)}
+        mapping = {index: Path(var.get()) for index, var in enumerate(self._choices)}
         if self._controller.apply_wallpapers_per_monitor(mapping):
             self._status.configure(text=self._tr.get("monitors.applied"), text_color=theme.COLOR_SUCCESS)
         else:
