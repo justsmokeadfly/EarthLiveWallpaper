@@ -168,6 +168,13 @@ def _dict_to_config(raw: dict[str, Any]) -> AppConfig:
         max_cache_size_mb=_safe_int(raw, "max_cache_size_mb", defaults.max_cache_size_mb, 1),
         language=language,
         paused=_safe_bool(raw, "paused", defaults.paused),
+        space_mix_enabled=_safe_bool(raw, "space_mix_enabled", defaults.space_mix_enabled),
+        space_mix_interval_hours=_safe_number(
+            raw,
+            "space_mix_interval_hours",
+            defaults.space_mix_interval_hours,
+            0.01,
+        ),
     )
 
 
