@@ -1,0 +1,168 @@
+name: Windows Release
+
+on:
+  push:
+    tags:
+      - "v*.*.*"
+  workflow_dispatch:
+    inputs:
+      release_tag:
+        description: "Version tag to release (for example v1.8.0)"
+        required: true
+        type: string
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    if: ${{ github.ref_type == 'tag' || github.event_name == 'workflow_dispatch' }}
+    runs-on: windows-latest
+    env:
+      RELEASE_TAG: ${{ github.event_name == 'workflow_dispatch' && inputs.release_tag || github.ref_name }}
+
+    steps:
+      - name: Validate release tag
+        shell: pwsh
+        run: |
+          if ("$env:RELEASE_TAG" -notmatch '^v\d+\.\d+\.\d+$') { throw "Invalid release tag: $env:RELEASE_TAG" }
+
+      - name: Checkout release source
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803  # v6
+        with:
+          ref: ${{ github.event_name == 'workflow_dispatch' && github.sha || github.ref }}
+
+      - name: Set release version
+        shell: pwsh
+        run: |
+          "RELEASE_VERSION=$($env:RELEASE_TAG.TrimStart('v'))" >> $env:GITHUB_ENV
+
+      - name: Set up Python
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97  # v7
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Install dependencies
+        run: python -m pip install -r requirements-dev.txt
+
+      - name: Ruff — full repository
+        run: |
+          python -m ruff check . --fix --output-format=concise
+          python -m ruff check . --output-format=concise
+
+      - name: Ruff — security rules
+        run: python -m ruff check . --select S --output-format=concise
+
+      - name: Mypy — full repository
+        run: >-
+          python -m mypy
+          --ignore-missing-imports
+          --follow-imports=skip
+          .
+
+      - name: Run tests
+        run: python -m pytest -q
+
+      - name: Build portable application
+        run: pyinstaller --clean --noconfirm EarthLive.spec
+
+      - name: Verify EarthLive.exe
+        shell: pwsh
+        run: |
+          $exe = "dist/EarthLive/EarthLive.exe"
+          if (-not (Test-Path $exe)) { throw "EarthLive.exe was not created by PyInstaller." }
+          if ((Get-Item $exe).Length -lt 1MB) { throw "EarthLive.exe looks suspiciously small." }
+
+      - name: Create portable ZIP
+        shell: pwsh
+        run: Compress-Archive -Path "dist/EarthLive/*" -DestinationPath "EarthLive-$env:RELEASE_VERSION-windows-x64-portable.zip"
+
+      - name: Verify Portable ZIP
+        shell: pwsh
+        run: |
+          $zip = "EarthLive-$env:RELEASE_VERSION-windows-x64-portable.zip"
+          if (-not (Test-Path $zip)) { throw "Portable ZIP was not created." }
+          if ((Get-Item $zip).Length -lt 1MB) { throw "Portable ZIP looks suspiciously small." }
+
+      - name: Install Inno Setup
+        shell: pwsh
+        run: choco install innosetup --no-progress -y
+
+      - name: Set installer version
+        shell: pwsh
+        run: |
+          $path = "installer/EarthLive.iss"
+          $content = Get-Content $path -Raw
+          $content = $content -replace '#define MyAppVersion "[^"]+"', ('#define MyAppVersion "' + $env:RELEASE_VERSION + '"')
+          Set-Content -Path $path -Value $content -Encoding UTF8
+
+      - name: Build installer
+        shell: pwsh
+        run: '& "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" "installer\EarthLive.iss"'
+
+      - name: Verify installer
+        shell: pwsh
+        run: |
+          $installer = "installer/output/EarthLive-Setup-$env:RELEASE_VERSION.exe"
+          if (-not (Test-Path $installer)) { throw "Installer was not created." }
+          if ((Get-Item $installer).Length -lt 1MB) { throw "Installer looks suspiciously small." }
+
+      - name: Create stable latest installer alias
+        shell: pwsh
+        run: |
+          $installer = "installer/output/EarthLive-Setup-$env:RELEASE_VERSION.exe"
+          Copy-Item $installer "installer/output/EarthLive-Setup-Latest.exe" -Force
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@3d0d9888cb7fd7b750713d6e236d1fcb99157228  # v3
+        with:
+          tag_name: ${{ env.RELEASE_TAG }}
+          target_commitish: ${{ github.sha }}
+          generate_release_notes: true
+          name: EarthLive Wallpaper ${{ env.RELEASE_TAG }}
+          body: |
+            ## 🌍 EarthLive Wallpaper ${{ env.RELEASE_TAG }}
+
+            ### ✨ What's new
+            - Added **NASA Fotos** with NASA Picture of the Day (APOD).
+            - Added **James Webb Fotos** from the official NASA Webb Flickr album.
+            - Added **Hubble Fotos** from the official NASA Hubble Flickr collection.
+            - Added search by title and description for NASA/Webb/Hubble galleries.
+            - Added local **⭐ Favorites** for space photos.
+            - Added official Flickr thumbnails so galleries do not download original images just to display previews.
+            - Added RU / EN photo descriptions with Russian selected by default.
+            - Added asynchronous translation and translation caching.
+            - Added real download progress for space photos.
+            - Added **Set as wallpaper** with Fill, Fit, Stretch, Tile, Center and Span modes.
+            - Added optional automatic **🌌 Cosmic Mix** across NASA APOD, James Webb and Hubble.
+            - Added manual Cosmic Mix trigger from the main window.
+            - Added **🖥️ per-monitor wallpapers** for Windows, allowing a different saved image on each monitor.
+            - Kept the existing Himawari satellite wallpaper workflow unchanged.
+
+            ### 🪐 Sources
+            - NASA Picture of the Day (APOD)
+            - Official NASA Webb Telescope Flickr album
+            - Official NASA Hubble Flickr collection
+
+            ### Windows downloads
+            - `EarthLive-Setup-${{ env.RELEASE_VERSION }}.exe` — Windows Installer (versioned)
+            - `EarthLive-Setup-Latest.exe` — Windows Installer (stable download link)
+            - `EarthLive-${{ env.RELEASE_VERSION }}-windows-x64-portable.zip` — Portable version
+            - `EarthLive.exe` — standalone executable
+
+            ### Release validation
+            - Ruff lint — full repository
+            - Ruff security rules
+            - mypy type-check — full repository
+            - pytest
+            - PyInstaller build verification
+            - Portable ZIP verification
+            - Inno Setup installer verification
+
+            > Note: Windows binaries are currently unsigned. Code signing is intentionally not included in this release.
+          files: |
+            dist/EarthLive/EarthLive.exe
+            EarthLive-${{ env.RELEASE_VERSION }}-windows-x64-portable.zip
+            installer/output/EarthLive-Setup-${{ env.RELEASE_VERSION }}.exe
+            installer/output/EarthLive-Setup-Latest.exe
