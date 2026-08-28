@@ -2,7 +2,11 @@
 
 from __future__ import annotations
 
+from pathlib import Path
+from typing import Any
+
 import httpx
+import pytest
 
 from infrastructure.nasa.nasa_media_service import NASAMediaService
 
@@ -22,20 +26,19 @@ _FLICKR_XML = b"""
 """
 
 
-def _mock_client(monkeypatch):
+def _mock_client(monkeypatch: pytest.MonkeyPatch) -> None:
     real_client = httpx.Client
 
     def handler(request: httpx.Request) -> httpx.Response:
         return httpx.Response(200, content=_FLICKR_XML)
 
-    monkeypatch.setattr(
-        httpx,
-        "Client",
-        lambda *args, **kwargs: real_client(transport=httpx.MockTransport(handler)),
-    )
+    def make_client(*args: Any, **kwargs: Any) -> httpx.Client:
+        return real_client(transport=httpx.MockTransport(handler))
+
+    monkeypatch.setattr(httpx, "Client", make_client)
 
 
-def test_webb_uses_flickr_thumbnail_and_source(monkeypatch) -> None:
+def test_webb_uses_flickr_thumbnail_and_source(monkeypatch: pytest.MonkeyPatch) -> None:
     _mock_client(monkeypatch)
     service = NASAMediaService()
     photos = service.get_webb_photos(limit=1)
@@ -47,7 +50,7 @@ def test_webb_uses_flickr_thumbnail_and_source(monkeypatch) -> None:
     assert photos[0].source_url.endswith("/1/")
 
 
-def test_hubble_uses_same_flickr_parser(monkeypatch) -> None:
+def test_hubble_uses_same_flickr_parser(monkeypatch: pytest.MonkeyPatch) -> None:
     _mock_client(monkeypatch)
     service = NASAMediaService()
     photos = service.get_hubble_photos(limit=1)
