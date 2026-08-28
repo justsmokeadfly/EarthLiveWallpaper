@@ -2,11 +2,13 @@
 
 from __future__ import annotations
 
+from pathlib import Path
+
 from config import ConfigPaths, load_config, save_config
 from domain.entities import AppConfig
 
 
-def test_space_mix_settings_round_trip(tmp_path) -> None:
+def test_space_mix_settings_round_trip(tmp_path: Path) -> None:
     paths = ConfigPaths(override_config_path=tmp_path / "config.json")
     config = AppConfig(space_mix_enabled=True, space_mix_interval_hours=6.0)
 
@@ -17,7 +19,7 @@ def test_space_mix_settings_round_trip(tmp_path) -> None:
     assert loaded.space_mix_interval_hours == 6.0
 
 
-def test_invalid_space_mix_interval_uses_default(tmp_path) -> None:
+def test_invalid_space_mix_interval_uses_default(tmp_path: Path) -> None:
     paths = ConfigPaths(override_config_path=tmp_path / "config.json")
     paths.config_file.write_text(
         '{"space_mix_enabled": true, "space_mix_interval_hours": 0}',
