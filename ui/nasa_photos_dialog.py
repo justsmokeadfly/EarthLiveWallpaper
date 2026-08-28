@@ -1,4 +1,4 @@
-"""NASA APOD and James Webb photo browser dialog."""
+"""NASA, James Webb, and Hubble photo browser dialog."""
 from __future__ import annotations
 
 import threading
@@ -27,24 +27,19 @@ _MODES = {
 
 
 class NASAPhotosDialog(ctk.CTkToplevel):
-    def __init__(
-        self,
-        master: ctk.CTk,
-        controller: AppController,
-        translator: Translator,
-        webb: bool = False,
-    ) -> None:
+    def __init__(self, master: ctk.CTk, controller: AppController, translator: Translator, webb: bool = False, source: str | None = None) -> None:
         super().__init__(master)
         self._controller = controller
         self._tr = translator
-        self._webb = webb
+        self._source = source or ("webb" if webb else "nasa")
         self._photos: list[NASAPhoto] = []
         self._refs: list[ctk.CTkImage] = []
         self._descriptions: dict[str, str] = {}
         self._description_labels: dict[str, ctk.CTkLabel] = {}
         self._favorite_buttons: dict[str, ctk.CTkButton] = {}
         self._busy = 0
-        self.title("James Webb Fotos" if webb else "NASA Fotos")
+        titles = {"nasa": "NASA Fotos", "webb": "James Webb Fotos", "hubble": "Hubble Fotos"}
+        self.title(titles.get(self._source, "Space Fotos"))
         self.geometry("1040x800")
         self.minsize(860, 660)
         self.configure(fg_color=theme.COLOR_BACKGROUND)
@@ -56,44 +51,23 @@ class NASAPhotosDialog(ctk.CTkToplevel):
     def _build(self) -> None:
         header = ctk.CTkFrame(self, fg_color="transparent")
         header.pack(fill="x", padx=theme.PADDING, pady=theme.PADDING)
-        ctk.CTkLabel(
-            header,
-            text="🔭 James Webb Fotos" if self._webb else "🚀 NASA Fotos",
-            font=(theme.FONT_FAMILY, theme.FONT_SIZE_TITLE, "bold"),
-            text_color=theme.COLOR_TEXT_PRIMARY,
-        ).pack(side="left")
+        heading = {"nasa": "🚀 NASA Fotos", "webb": "🔭 James Webb Fotos", "hubble": "🛰️ Hubble Fotos"}
+        ctk.CTkLabel(header, text=heading.get(self._source, "🌌 Space Fotos"), font=(theme.FONT_FAMILY, theme.FONT_SIZE_TITLE, "bold"), text_color=theme.COLOR_TEXT_PRIMARY).pack(side="left")
         self._search = ctk.CTkEntry(header, placeholder_text="Поиск по названию и описанию…")
         self._search.pack(side="left", fill="x", expand=True, padx=12)
         self._search.bind("<KeyRelease>", self._search_changed)
         self._favorites_only = ctk.CTkCheckBox(header, text="⭐ Избранное", command=self._search_changed)
         self._favorites_only.pack(side="left", padx=(0, 12))
-        self._language = ctk.CTkSegmentedButton(
-            header,
-            values=["RU", "EN"],
-            command=self._language_changed,
-        )
+        self._language = ctk.CTkSegmentedButton(header, values=["RU", "EN"], command=self._language_changed)
         self._language.set("RU")
         self._language.pack(side="right")
-        self._progress = ctk.CTkProgressBar(
-            self,
-            mode="indeterminate",
-            corner_radius=theme.CORNER_RADIUS,
-        )
+        self._progress = ctk.CTkProgressBar(self, mode="indeterminate", corner_radius=theme.CORNER_RADIUS)
         self._progress.start()
         self._progress.pack(fill="x", padx=theme.PADDING, pady=(0, 6))
-        self._status = ctk.CTkLabel(
-            self,
-            text="Загрузка фотографий…",
-            text_color=theme.COLOR_TEXT_SECONDARY,
-        )
+        self._status = ctk.CTkLabel(self, text="Загрузка фотографий…", text_color=theme.COLOR_TEXT_SECONDARY)
         self._status.pack(pady=(0, 6))
         self._scroll = ctk.CTkScrollableFrame(self, fg_color="transparent")
-        self._scroll.pack(
-            fill="both",
-            expand=True,
-            padx=theme.PADDING,
-            pady=(0, theme.PADDING),
-        )
+        self._scroll.pack(fill="both", expand=True, padx=theme.PADDING, pady=(0, theme.PADDING))
 
     def _load_async(self) -> None:
         self._set_busy(True)
@@ -101,11 +75,12 @@ class NASAPhotosDialog(ctk.CTkToplevel):
 
     def _load_worker(self) -> None:
         try:
-            photos = (
-                [self._controller.get_nasa_apod()]
-                if not self._webb
-                else self._controller.get_webb_photos()
-            )
+            if self._source == "nasa":
+                photos = [self._controller.get_nasa_apod()]
+            elif self._source == "webb":
+                photos = self._controller.get_webb_photos()
+            else:
+                photos = self._controller.get_hubble_photos()
             self.after(0, lambda: self._loaded(photos))
         except Exception as exc:
             message = str(exc)
@@ -114,7 +89,6 @@ class NASAPhotosDialog(ctk.CTkToplevel):
     def _loaded(self, photos: list[NASAPhoto]) -> None:
         self._progress.stop()
         self._photos = photos
-        self._status.configure(text=f"Найдено фотографий: {len(photos)}")
         self._populate()
         self._set_busy(False)
         self._load_descriptions_async()
@@ -128,13 +102,7 @@ class NASAPhotosDialog(ctk.CTkToplevel):
         for photo in self._photos:
             label = self._description_labels.get(photo.title)
             if label is not None:
-                label.configure(
-                    text=(
-                        photo.description_en
-                        if value == "EN"
-                        else self._descriptions.get(photo.title, photo.description_en)
-                    )
-                )
+                label.configure(text=photo.description_en if value == "EN" else self._descriptions.get(photo.title, photo.description_en))
 
     def _search_changed(self, _event: Any = None) -> None:
         self._populate()
@@ -161,56 +129,23 @@ class NASAPhotosDialog(ctk.CTkToplevel):
         self._status.configure(text=f"Показано: {len(filtered)} из {len(self._photos)}")
 
     def _add_card(self, photo: NASAPhoto) -> None:
-        card = ctk.CTkFrame(
-            self._scroll,
-            fg_color=theme.COLOR_SURFACE,
-            corner_radius=theme.CORNER_RADIUS,
-        )
+        card = ctk.CTkFrame(self._scroll, fg_color=theme.COLOR_SURFACE, corner_radius=theme.CORNER_RADIUS)
         card.pack(fill="x", pady=7)
         body = ctk.CTkFrame(card, fg_color="transparent")
         body.pack(fill="x", padx=10, pady=10)
         preview = ctk.CTkLabel(body, text="Превью…", width=360, height=210)
         preview.pack(side="left", padx=(0, 12))
-        threading.Thread(
-            target=self._load_preview,
-            args=(photo, preview),
-            daemon=True,
-        ).start()
+        threading.Thread(target=self._load_preview, args=(photo, preview), daemon=True).start()
         info = ctk.CTkFrame(body, fg_color="transparent")
         info.pack(side="left", fill="both", expand=True)
         title_row = ctk.CTkFrame(info, fg_color="transparent")
         title_row.pack(fill="x", pady=(0, 6))
-        ctk.CTkLabel(
-            title_row,
-            text=photo.title,
-            anchor="w",
-            justify="left",
-            wraplength=430,
-            font=(theme.FONT_FAMILY, theme.FONT_SIZE_BODY, "bold"),
-            text_color=theme.COLOR_TEXT_PRIMARY,
-        ).pack(side="left", fill="x", expand=True)
-        favorite_text = "★" if self._controller.is_nasa_favorite(photo) else "☆"
-        favorite = ctk.CTkButton(
-            title_row,
-            text=favorite_text,
-            width=42,
-            command=lambda p=photo: self._toggle_favorite(p),
-        )
+        ctk.CTkLabel(title_row, text=photo.title, anchor="w", justify="left", wraplength=430, font=(theme.FONT_FAMILY, theme.FONT_SIZE_BODY, "bold"), text_color=theme.COLOR_TEXT_PRIMARY).pack(side="left", fill="x", expand=True)
+        favorite = ctk.CTkButton(title_row, text="★" if self._controller.is_nasa_favorite(photo) else "☆", width=42, command=lambda p=photo: self._toggle_favorite(p))
         favorite.pack(side="right")
         self._favorite_buttons[photo.title] = favorite
-        description = (
-            photo.description_en
-            if self._language.get() == "EN"
-            else self._descriptions.get(photo.title, photo.description_en)
-        )
-        description_label = ctk.CTkLabel(
-            info,
-            text=description,
-            anchor="nw",
-            justify="left",
-            wraplength=460,
-            text_color=theme.COLOR_TEXT_SECONDARY,
-        )
+        description = photo.description_en if self._language.get() == "EN" else self._descriptions.get(photo.title, photo.description_en)
+        description_label = ctk.CTkLabel(info, text=description, anchor="nw", justify="left", wraplength=460, text_color=theme.COLOR_TEXT_SECONDARY)
         description_label.pack(fill="both", expand=True)
         self._description_labels[photo.title] = description_label
         self._add_actions(info, photo)
@@ -221,14 +156,8 @@ class NASAPhotosDialog(ctk.CTkToplevel):
         mode.pack(fill="x", pady=(8, 5))
         actions = ctk.CTkFrame(parent, fg_color="transparent")
         actions.pack(fill="x")
-        ctk.CTkButton(actions, text="Скачать", command=lambda p=photo: self._download(p)).pack(
-            side="left", padx=(0, 5)
-        )
-        ctk.CTkButton(
-            actions,
-            text="Установить как обои",
-            command=lambda p=photo, m=mode: self._install(p, m.get()),
-        ).pack(side="left")
+        ctk.CTkButton(actions, text="Скачать", command=lambda p=photo: self._download(p)).pack(side="left", padx=(0, 5))
+        ctk.CTkButton(actions, text="Установить как обои", command=lambda p=photo, m=mode: self._install(p, m.get())).pack(side="left")
 
     def _toggle_favorite(self, photo: NASAPhoto) -> None:
         favorite = self._controller.toggle_nasa_favorite(photo)
@@ -293,13 +222,7 @@ class NASAPhotosDialog(ctk.CTkToplevel):
 
         self._run_transfer(photo, path, success_callback=completed)
 
-    def _run_transfer(
-        self,
-        photo: NASAPhoto,
-        destination: Path,
-        success_text: str | None = None,
-        success_callback: Callable[[], None] | None = None,
-    ) -> None:
+    def _run_transfer(self, photo: NASAPhoto, destination: Path, success_text: str | None = None, success_callback: Callable[[], None] | None = None) -> None:
         self._set_busy(True)
         self._progress.configure(mode="determinate")
         self._progress.set(0.0)
@@ -323,11 +246,7 @@ class NASAPhotosDialog(ctk.CTkToplevel):
     def _set_transfer_progress(self, fraction: float) -> None:
         self._progress.set(max(0.0, min(1.0, fraction)))
 
-    def _transfer_done(
-        self,
-        success_text: str | None,
-        success_callback: Callable[[], None] | None,
-    ) -> None:
+    def _transfer_done(self, success_text: str | None, success_callback: Callable[[], None] | None) -> None:
         self._set_busy(False)
         self._progress.set(1.0)
         if success_callback is not None:
@@ -349,7 +268,7 @@ class NASAPhotosDialog(ctk.CTkToplevel):
 
     def _unique_path(self, photo: NASAPhoto) -> Path:
         suffix = ".png" if ".png" in photo.image_url.lower() else ".jpg"
-        return self._controller.wallpapers_dir / f"nasa_{_safe_name(photo.title)}{suffix}"
+        return self._controller.wallpapers_dir / f"{photo.source}_{_safe_name(photo.title)}{suffix}"
 
 
 def _safe_name(value: str) -> str:
