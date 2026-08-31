@@ -16,7 +16,12 @@ _IID = "{B92B56A9-8B55-4E14-9A89-0199BBB6F93B}"
 
 
 def get_monitor_count() -> int:
-    """Return the number of monitors known to Windows."""
+    """Return the number of monitors known to Windows.
+
+    Returns ``0`` (rather than raising) if the per-monitor wallpaper COM
+    API is unavailable or fails, matching this module's "never raise"
+    contract.
+    """
     if sys.platform != "win32":
         return 0
     import comtypes
@@ -25,6 +30,9 @@ def get_monitor_count() -> int:
     try:
         desktop_wallpaper = _create_desktop_wallpaper()
         return int(desktop_wallpaper.GetMonitorDevicePathCount())
+    except (OSError, RuntimeError, comtypes.COMError):
+        _logger.exception("Failed to query monitor count.")
+        return 0
     finally:
         comtypes.CoUninitialize()
 
@@ -48,7 +56,7 @@ def set_wallpapers_per_monitor(wallpapers: dict[int, Path]) -> bool:
             monitor_id = desktop_wallpaper.GetMonitorDevicePathAt(index)
             desktop_wallpaper.SetWallpaper(monitor_id, str(path.resolve()))
         return True
-    except (OSError, RuntimeError):
+    except (OSError, RuntimeError, comtypes.COMError):
         _logger.exception("Failed to set per-monitor wallpapers.")
         return False
     finally:
