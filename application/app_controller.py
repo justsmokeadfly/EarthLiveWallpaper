@@ -65,7 +65,7 @@ class AppController:
         self._config = load_config(config_paths)
         self._scheduler = SchedulerService(update_callback=self._on_scheduled_update)
         self._notifier: Callable[[UpdateResult], None] | None = None
-        self._nasa_media = NASAMediaService()
+        self._nasa_media = NASAMediaService(api_key=self._config.nasa_api_key)
         self._favorites = FavoritesRepository(config_paths.data_dir)
         self._space_mix = SpaceMixService(self._nasa_media, config_paths.wallpapers_dir)
 
@@ -94,6 +94,7 @@ class AppController:
         interval_changed = new_config.check_interval_hours != self._config.check_interval_hours
         self._config = new_config
         save_config(self._config_paths, new_config)
+        self._nasa_media.set_api_key(new_config.nasa_api_key)
         if new_config.autostart:
             self._autostart_manager.enable()
         else:

@@ -175,6 +175,7 @@ def _dict_to_config(raw: dict[str, Any]) -> AppConfig:
             defaults.space_mix_interval_hours,
             0.01,
         ),
+        nasa_api_key=str(raw.get("nasa_api_key", defaults.nasa_api_key)).strip(),
     )
 
 

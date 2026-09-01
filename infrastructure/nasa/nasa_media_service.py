@@ -52,9 +52,14 @@ class NASAPhoto:
 class NASAMediaService:
     """Fetch NASA APOD plus official Webb and Hubble Flickr galleries."""
 
-    def __init__(self, timeout: float = 30.0) -> None:
+    def __init__(self, timeout: float = 30.0, api_key: str = "") -> None:
         self._timeout = timeout
+        self._api_key = api_key.strip() or "DEMO_KEY"
         self._translation_cache: dict[str, str] = {}
+
+    def set_api_key(self, api_key: str) -> None:
+        """Update the NASA API key used for subsequent APOD requests."""
+        self._api_key = api_key.strip() or "DEMO_KEY"
 
     def get_apod(self) -> NASAPhoto:
         """Fetch NASA's Astronomy Picture of the Day.
@@ -70,7 +75,7 @@ class NASAMediaService:
         with httpx.Client(timeout=self._timeout, follow_redirects=True) as client:
             last_error: Exception | None = None
             for days_back in range(_APOD_MAX_LOOKBACK_DAYS + 1):
-                params = {"api_key": "DEMO_KEY"}
+                params = {"api_key": self._api_key}
                 if days_back > 0:
                     target_date = date.today() - timedelta(days=days_back)
                     params["date"] = target_date.isoformat()
@@ -79,11 +84,16 @@ class NASAMediaService:
                     response.raise_for_status()
                 except httpx.HTTPStatusError as exc:
                     if exc.response.status_code in (403, 429):
+                        if self._api_key == "DEMO_KEY":
+                            raise RuntimeError(
+                                "NASA's shared DEMO_KEY hit its rate limit "
+                                "(30 requests/hour, shared by everyone using it). "
+                                "Wait a bit and try again, or get a free personal "
+                                "key at https://api.nasa.gov/ for a much higher limit."
+                            ) from exc
                         raise RuntimeError(
-                            "NASA's shared DEMO_KEY hit its rate limit "
-                            "(30 requests/hour, shared by everyone using it). "
-                            "Wait a bit and try again, or get a free personal "
-                            "key at https://api.nasa.gov/ for a much higher limit."
+                            "Your personal NASA API key hit its rate limit "
+                            "(1000 requests/hour). Wait a bit and try again."
                         ) from exc
                     last_error = exc
                     continue

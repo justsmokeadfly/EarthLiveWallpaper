@@ -1,4 +1,4 @@
-# 🌍 EarthLive Wallpaper v1.8.2
+# 🌍 EarthLive Wallpaper v1.8.3
 
 > A lightweight Windows desktop application that turns near-real-time Himawari-8/9 satellite imagery into live Earth wallpaper, with NASA, James Webb, Hubble, Cosmic Mix and per-monitor wallpaper controls.
 
@@ -12,6 +12,12 @@
 [![License](https://img.shields.io/badge/license-MIT-green?style=flat-square)](LICENSE)
 
 EarthLive Wallpaper downloads the latest available Himawari satellite tiles, validates them, assembles a full-disk Earth image, and applies it as Windows wallpaper.
+
+## 🛠️ Fixed in v1.8.3
+
+- NASA APOD now fails with a clear explanation when NASA's shared `DEMO_KEY` hits its rate limit (30 requests/hour, shared globally by every app using it) instead of showing a raw HTTP error. Reduced the video-day lookback window so it no longer burns through the shared quota as fast.
+- Photo resolution is now shown for every photo in NASA/Webb/Hubble browsers (read from Flickr's feed metadata for Webb/Hubble, from the downloaded image for APOD — no extra downloads needed).
+- Note: `DEMO_KEY` is inherently rate-limited and shared worldwide. For reliable APOD loading, get a free personal key at [api.nasa.gov](https://api.nasa.gov/) (instant, 1000 requests/hour) and it can be wired into the app.
 
 ## 🛠️ Fixed in v1.8.2
 

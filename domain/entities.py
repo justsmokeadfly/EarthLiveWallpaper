@@ -62,3 +62,4 @@ class AppConfig:
     paused: bool = False
     space_mix_enabled: bool = False
     space_mix_interval_hours: float = 24.0
+    nasa_api_key: str = ""

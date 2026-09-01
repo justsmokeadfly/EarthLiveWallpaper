@@ -28,7 +28,7 @@ class SettingsDialog(ctk.CTkToplevel):
         self._on_language_changed = on_language_changed
         self._config = controller.get_config()
         self.title(self._tr.get("settings.title"))
-        self.geometry("430x720")
+        self.geometry("430x760")
         self.resizable(False, False)
         self.configure(fg_color=theme.COLOR_BACKGROUND)
         self._build_widgets()
@@ -63,6 +63,8 @@ class SettingsDialog(ctk.CTkToplevel):
         self._add_switch(container, self._tr.get("settings.space_mix"), self._space_mix_var)
         self._space_mix_interval_var = ctk.StringVar(value=str(self._config.space_mix_interval_hours))
         self._add_entry(container, self._tr.get("settings.space_mix_interval"), self._space_mix_interval_var)
+        self._nasa_api_key_var = ctk.StringVar(value=self._config.nasa_api_key)
+        self._add_entry(container, self._tr.get("settings.nasa_api_key"), self._nasa_api_key_var)
 
         self._error_label = ctk.CTkLabel(self, text="", text_color=theme.COLOR_ERROR, font=(theme.FONT_FAMILY, theme.FONT_SIZE_SMALL))
         self._error_label.pack(padx=theme.PADDING)
@@ -123,6 +125,7 @@ class SettingsDialog(ctk.CTkToplevel):
             language=language_value,
             space_mix_enabled=self._space_mix_var.get(),
             space_mix_interval_hours=space_mix_interval_hours,
+            nasa_api_key=self._nasa_api_key_var.get().strip(),
         )
         try:
             self._controller.update_config(new_config)
