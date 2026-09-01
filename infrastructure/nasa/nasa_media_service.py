@@ -6,27 +6,29 @@ import html
 import re
 from collections.abc import Callable
 from dataclasses import dataclass
+from datetime import date, timedelta
 from pathlib import Path
 
 import httpx
 from defusedxml import ElementTree as ET
 
 NASA_APOD_URL = "https://api.nasa.gov/planetary/apod"
+_APOD_MAX_LOOKBACK_DAYS = 10
 WEBB_FEED_URL = (
     "https://api.flickr.com/services/feeds/photoset.gne"
-    "?set=72177720331299130&nsid=nasawebbtelescope&lang=en-us&format=rss_200"
+    "?set=72177720331299130&nsid=50785054@N03&lang=en-us&format=rss_200"
 )
 WEBB_FEED_FALLBACK_URL = (
     "https://www.flickr.com/services/feeds/photoset.gne"
-    "?set=72177720331299130&nsid=nasawebbtelescope&lang=en-us&format=rss_200"
+    "?set=72177720331299130&nsid=50785054@N03&lang=en-us&format=rss_200"
 )
 HUBBLE_FEED_URL = (
     "https://api.flickr.com/services/feeds/photoset.gne"
-    "?set=72157667717916603&nsid=nasahubble&lang=en-us&format=rss_200"
+    "?set=72157667717916603&nsid=144614754@N02&lang=en-us&format=rss_200"
 )
 HUBBLE_FEED_FALLBACK_URL = (
     "https://www.flickr.com/services/feeds/photoset.gne"
-    "?set=72157667717916603&nsid=nasahubble&lang=en-us&format=rss_200"
+    "?set=72157667717916603&nsid=144614754@N02&lang=en-us&format=rss_200"
 )
 _MYMEMORY_URL = "https://api.mymemory.translated.net/get"
 _MYMEMORY_MAX_BYTES = 450
@@ -53,21 +55,32 @@ class NASAMediaService:
         self._translation_cache: dict[str, str] = {}
 
     def get_apod(self) -> NASAPhoto:
+        """Fetch NASA's Astronomy Picture of the Day.
+
+        NASA occasionally publishes a video instead of an image (e.g. launch
+        footage). When that happens, step backwards day by day until a
+        recent image is found instead of failing outright.
+        """
         with httpx.Client(timeout=self._timeout, follow_redirects=True) as client:
-            response = client.get(NASA_APOD_URL, params={"api_key": "DEMO_KEY"})
-            response.raise_for_status()
-            data = response.json()
-        if data.get("media_type") != "image" or not data.get("url"):
-            raise RuntimeError("NASA APOD did not return an image.")
-        return NASAPhoto(
-            title=str(data.get("title", "NASA Picture of the Day")),
-            description_en=str(data.get("explanation", "")),
-            image_url=str(data.get("hdurl") or data["url"]),
-            source_url=str(data.get("url", "")),
-            date=str(data.get("date", "")),
-            copyright=str(data.get("copyright", "")),
-            source="nasa",
-        )
+            for days_back in range(_APOD_MAX_LOOKBACK_DAYS + 1):
+                params = {"api_key": "DEMO_KEY"}
+                if days_back > 0:
+                    target_date = date.today() - timedelta(days=days_back)
+                    params["date"] = target_date.isoformat()
+                response = client.get(NASA_APOD_URL, params=params)
+                response.raise_for_status()
+                data = response.json()
+                if data.get("media_type") == "image" and data.get("url"):
+                    return NASAPhoto(
+                        title=str(data.get("title", "NASA Picture of the Day")),
+                        description_en=str(data.get("explanation", "")),
+                        image_url=str(data.get("hdurl") or data["url"]),
+                        source_url=str(data.get("url", "")),
+                        date=str(data.get("date", "")),
+                        copyright=str(data.get("copyright", "")),
+                        source="nasa",
+                    )
+        raise RuntimeError("NASA APOD did not return an image.")
 
     def get_webb_photos(self, limit: int = 24) -> list[NASAPhoto]:
         return self._get_flickr_photos(

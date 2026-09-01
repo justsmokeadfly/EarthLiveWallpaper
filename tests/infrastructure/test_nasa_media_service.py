@@ -2,14 +2,12 @@
 
 from __future__ import annotations
 
-from pathlib import Path
 from typing import Any
 
 import httpx
 import pytest
 
 from infrastructure.nasa.nasa_media_service import NASAMediaService
-
 
 _FLICKR_XML = b"""
 <rss xmlns:media="http://search.yahoo.com/mrss/">
@@ -58,3 +56,84 @@ def test_hubble_uses_same_flickr_parser(monkeypatch: pytest.MonkeyPatch) -> None
     assert len(photos) == 1
     assert photos[0].source == "hubble"
     assert photos[0].thumbnail_url.endswith("thumb.jpg")
+
+
+def test_apod_returns_todays_image(monkeypatch: pytest.MonkeyPatch) -> None:
+    real_client = httpx.Client
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        assert "date" not in request.url.params
+        return httpx.Response(
+            200,
+            json={
+                "media_type": "image",
+                "url": "https://apod.nasa.gov/apod/today.jpg",
+                "title": "Today's Sky",
+                "explanation": "A lovely nebula.",
+                "date": "2026-08-31",
+            },
+        )
+
+    def make_client(*args: Any, **kwargs: Any) -> httpx.Client:
+        return real_client(transport=httpx.MockTransport(handler))
+
+    monkeypatch.setattr(httpx, "Client", make_client)
+    service = NASAMediaService()
+    photo = service.get_apod()
+
+    assert photo.image_url.endswith("today.jpg")
+    assert photo.title == "Today's Sky"
+
+
+def test_apod_falls_back_when_today_is_a_video(monkeypatch: pytest.MonkeyPatch) -> None:
+    real_client = httpx.Client
+    calls: list[str | None] = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        requested_date = request.url.params.get("date")
+        calls.append(requested_date)
+        if requested_date is None:
+            return httpx.Response(
+                200,
+                json={"media_type": "video", "url": "https://youtube.com/watch?v=x"},
+            )
+        return httpx.Response(
+            200,
+            json={
+                "media_type": "image",
+                "url": "https://apod.nasa.gov/apod/yesterday.jpg",
+                "title": "Yesterday's Sky",
+                "date": requested_date,
+            },
+        )
+
+    def make_client(*args: Any, **kwargs: Any) -> httpx.Client:
+        return real_client(transport=httpx.MockTransport(handler))
+
+    monkeypatch.setattr(httpx, "Client", make_client)
+    service = NASAMediaService()
+    photo = service.get_apod()
+
+    assert photo.image_url.endswith("yesterday.jpg")
+    assert calls[0] is None
+    assert calls[1] is not None
+
+
+def test_apod_raises_if_no_image_found_within_lookback(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    real_client = httpx.Client
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        return httpx.Response(
+            200, json={"media_type": "video", "url": "https://youtube.com/watch?v=x"}
+        )
+
+    def make_client(*args: Any, **kwargs: Any) -> httpx.Client:
+        return real_client(transport=httpx.MockTransport(handler))
+
+    monkeypatch.setattr(httpx, "Client", make_client)
+    service = NASAMediaService()
+
+    with pytest.raises(RuntimeError, match="did not return an image"):
+        service.get_apod()
