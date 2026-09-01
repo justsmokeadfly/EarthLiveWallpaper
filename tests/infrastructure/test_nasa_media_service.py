@@ -46,6 +46,54 @@ def test_webb_uses_flickr_thumbnail_and_source(monkeypatch: pytest.MonkeyPatch) 
     assert photos[0].image_url.endswith("original.jpg")
     assert photos[0].thumbnail_url.endswith("thumb.jpg")
     assert photos[0].source_url.endswith("/1/")
+    assert photos[0].width == 0
+    assert photos[0].height == 0
+
+
+def test_flickr_feed_parses_width_and_height(monkeypatch: pytest.MonkeyPatch) -> None:
+    xml_with_dims = b"""
+<rss xmlns:media="http://search.yahoo.com/mrss/">
+  <channel>
+    <item>
+      <title>Test Space Image</title>
+      <description>A beautiful galaxy.</description>
+      <link>https://www.flickr.com/photos/example/1/</link>
+      <media:content url="https://live.staticflickr.com/original.jpg" width="4096" height="2731" />
+      <media:thumbnail url="https://live.staticflickr.com/thumb.jpg" />
+    </item>
+  </channel>
+</rss>
+"""
+    real_client = httpx.Client
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        return httpx.Response(200, content=xml_with_dims)
+
+    def make_client(*args: Any, **kwargs: Any) -> httpx.Client:
+        return real_client(transport=httpx.MockTransport(handler))
+
+    monkeypatch.setattr(httpx, "Client", make_client)
+    service = NASAMediaService()
+    photos = service.get_webb_photos(limit=1)
+
+    assert photos[0].width == 4096
+    assert photos[0].height == 2731
+
+
+def test_apod_rate_limit_gives_clear_error(monkeypatch: pytest.MonkeyPatch) -> None:
+    real_client = httpx.Client
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        return httpx.Response(403, json={"error": "rate limit"})
+
+    def make_client(*args: Any, **kwargs: Any) -> httpx.Client:
+        return real_client(transport=httpx.MockTransport(handler))
+
+    monkeypatch.setattr(httpx, "Client", make_client)
+    service = NASAMediaService()
+
+    with pytest.raises(RuntimeError, match="rate limit"):
+        service.get_apod()
 
 
 def test_hubble_uses_same_flickr_parser(monkeypatch: pytest.MonkeyPatch) -> None:

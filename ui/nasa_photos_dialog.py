@@ -36,6 +36,7 @@ class NASAPhotosDialog(ctk.CTkToplevel):
         self._refs: list[ctk.CTkImage] = []
         self._descriptions: dict[str, str] = {}
         self._description_labels: dict[str, ctk.CTkLabel] = {}
+        self._resolution_labels: dict[str, ctk.CTkLabel] = {}
         self._favorite_buttons: dict[str, ctk.CTkButton] = {}
         self._busy = 0
         titles = {"nasa": "NASA Fotos", "webb": "James Webb Fotos", "hubble": "Hubble Fotos"}
@@ -123,6 +124,7 @@ class NASAPhotosDialog(ctk.CTkToplevel):
             child.destroy()
         self._refs.clear()
         self._description_labels.clear()
+        self._resolution_labels.clear()
         self._favorite_buttons.clear()
         for photo in filtered:
             self._add_card(photo)
@@ -144,6 +146,15 @@ class NASAPhotosDialog(ctk.CTkToplevel):
         favorite = ctk.CTkButton(title_row, text="★" if self._controller.is_nasa_favorite(photo) else "☆", width=42, command=lambda p=photo: self._toggle_favorite(p))
         favorite.pack(side="right")
         self._favorite_buttons[photo.title] = favorite
+        resolution_label = ctk.CTkLabel(
+            info,
+            text=_format_resolution(photo.width, photo.height),
+            anchor="w",
+            text_color=theme.COLOR_TEXT_SECONDARY,
+            font=(theme.FONT_FAMILY, theme.FONT_SIZE_SMALL),
+        )
+        resolution_label.pack(fill="x", pady=(0, 4))
+        self._resolution_labels[photo.title] = resolution_label
         description = photo.description_en if self._language.get() == "EN" else self._descriptions.get(photo.title, photo.description_en)
         description_label = ctk.CTkLabel(info, text=description, anchor="nw", justify="left", wraplength=460, text_color=theme.COLOR_TEXT_SECONDARY)
         description_label.pack(fill="both", expand=True)
@@ -196,11 +207,18 @@ class NASAPhotosDialog(ctk.CTkToplevel):
             if not path.exists():
                 self._controller.download_nasa_photo(photo, path, image_url=preview_url)
             with Image.open(path) as image:
+                if not photo.width or not photo.height:
+                    self.after(0, lambda size=image.size: self._set_resolution(photo, size))
                 image.thumbnail(_THUMB, Image.LANCZOS)
                 img = ctk.CTkImage(light_image=image.copy(), dark_image=image.copy(), size=image.size)
             self.after(0, lambda: self._set_preview(label, img))
         except Exception:
             self.after(0, lambda: label.configure(text="Превью недоступно"))
+
+    def _set_resolution(self, photo: NASAPhoto, size: tuple[int, int]) -> None:
+        label = self._resolution_labels.get(photo.title)
+        if label is not None:
+            label.configure(text=_format_resolution(*size))
 
     def _set_preview(self, label: ctk.CTkLabel, image: ctk.CTkImage) -> None:
         self._refs.append(image)
@@ -274,3 +292,10 @@ class NASAPhotosDialog(ctk.CTkToplevel):
 def _safe_name(value: str) -> str:
     value = "".join(ch if ch.isalnum() or ch in "-_" else "_" for ch in value)
     return value[:100] or "photo"
+
+
+def _format_resolution(width: int, height: int) -> str:
+    if not width or not height:
+        return "Разрешение: определяется…"
+    megapixels = (width * height) / 1_000_000
+    return f"Разрешение: {width} × {height} ({megapixels:.1f} Мп)"

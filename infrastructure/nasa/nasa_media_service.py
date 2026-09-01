@@ -13,7 +13,7 @@ import httpx
 from defusedxml import ElementTree as ET
 
 NASA_APOD_URL = "https://api.nasa.gov/planetary/apod"
-_APOD_MAX_LOOKBACK_DAYS = 10
+_APOD_MAX_LOOKBACK_DAYS = 3
 WEBB_FEED_URL = (
     "https://api.flickr.com/services/feeds/photoset.gne"
     "?set=72177720331299130&nsid=50785054@N03&lang=en-us&format=rss_200"
@@ -45,6 +45,8 @@ class NASAPhoto:
     copyright: str = ""
     thumbnail_url: str = ""
     source: str = "nasa"
+    width: int = 0
+    height: int = 0
 
 
 class NASAMediaService:
@@ -59,16 +61,32 @@ class NASAMediaService:
 
         NASA occasionally publishes a video instead of an image (e.g. launch
         footage). When that happens, step backwards day by day until a
-        recent image is found instead of failing outright.
+        recent image is found instead of failing outright. Uses the shared
+        NASA DEMO_KEY, which is rate-limited (30 requests/hour, 50/day per
+        IP, shared by every app that uses it) - if that limit is hit, fail
+        immediately with a clear explanation instead of burning the rest of
+        the quota on further lookback attempts that would also be rejected.
         """
         with httpx.Client(timeout=self._timeout, follow_redirects=True) as client:
+            last_error: Exception | None = None
             for days_back in range(_APOD_MAX_LOOKBACK_DAYS + 1):
                 params = {"api_key": "DEMO_KEY"}
                 if days_back > 0:
                     target_date = date.today() - timedelta(days=days_back)
                     params["date"] = target_date.isoformat()
-                response = client.get(NASA_APOD_URL, params=params)
-                response.raise_for_status()
+                try:
+                    response = client.get(NASA_APOD_URL, params=params)
+                    response.raise_for_status()
+                except httpx.HTTPStatusError as exc:
+                    if exc.response.status_code in (403, 429):
+                        raise RuntimeError(
+                            "NASA's shared DEMO_KEY hit its rate limit "
+                            "(30 requests/hour, shared by everyone using it). "
+                            "Wait a bit and try again, or get a free personal "
+                            "key at https://api.nasa.gov/ for a much higher limit."
+                        ) from exc
+                    last_error = exc
+                    continue
                 data = response.json()
                 if data.get("media_type") == "image" and data.get("url"):
                     return NASAPhoto(
@@ -80,7 +98,7 @@ class NASAMediaService:
                         copyright=str(data.get("copyright", "")),
                         source="nasa",
                     )
-        raise RuntimeError("NASA APOD did not return an image.")
+        raise RuntimeError("NASA APOD did not return an image.") from last_error
 
     def get_webb_photos(self, limit: int = 24) -> list[NASAPhoto]:
         return self._get_flickr_photos(
@@ -120,6 +138,8 @@ class NASAMediaService:
             thumbnail = item.find("media:thumbnail", ns)
             image_url = media.attrib.get("url", "") if media is not None else ""
             thumbnail_url = thumbnail.attrib.get("url", "") if thumbnail is not None else ""
+            width = _parse_int(media.attrib.get("width")) if media is not None else 0
+            height = _parse_int(media.attrib.get("height")) if media is not None else 0
             source_url = item.findtext("link") or image_url
             if not title or not image_url:
                 continue
@@ -131,6 +151,8 @@ class NASAMediaService:
                     source_url=source_url,
                     thumbnail_url=thumbnail_url,
                     source=source,
+                    width=width,
+                    height=height,
                 )
             )
         if not photos:
@@ -215,6 +237,15 @@ def _split_for_translation(text: str, max_bytes: int) -> list[str]:
     if current:
         chunks.append(current)
     return chunks
+
+
+def _parse_int(value: str | None) -> int:
+    if not value:
+        return 0
+    try:
+        return int(value)
+    except ValueError:
+        return 0
 
 
 def _strip_html(value: str) -> str:
