@@ -1,4 +1,4 @@
-# 🌍 EarthLive Wallpaper v1.8.1
+# 🌍 EarthLive Wallpaper v1.8.2
 
 > A lightweight Windows desktop application that turns near-real-time Himawari-8/9 satellite imagery into live Earth wallpaper, with NASA, James Webb, Hubble, Cosmic Mix and per-monitor wallpaper controls.
 
@@ -12,6 +12,11 @@
 [![License](https://img.shields.io/badge/license-MIT-green?style=flat-square)](LICENSE)
 
 EarthLive Wallpaper downloads the latest available Himawari satellite tiles, validates them, assembles a full-disk Earth image, and applies it as Windows wallpaper.
+
+## 🛠️ Fixed in v1.8.2
+
+- Fixed "Failed to load Flickr webb/hubble feed" — the Webb and Hubble Flickr feed URLs were using the account username as the `nsid` parameter instead of the numeric Flickr user ID that the feed API actually requires.
+- Fixed NASA APOD failing with "did not return an image" on days NASA publishes a video (e.g. launch footage) — it now automatically falls back to the most recent day that has an image.
 
 ## 🔒 Security update in v1.8.1
 
