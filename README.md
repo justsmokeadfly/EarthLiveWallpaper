@@ -1,4 +1,4 @@
-# 🌍 EarthLive Wallpaper v1.8.4
+# 🌍 EarthLive Wallpaper v1.8.5
 
 > A lightweight Windows desktop application that turns near-real-time Himawari-8/9 satellite imagery into live Earth wallpaper, with NASA, James Webb, Hubble, Cosmic Mix and per-monitor wallpaper controls.
 
@@ -12,6 +12,10 @@
 [![License](https://img.shields.io/badge/license-MIT-green?style=flat-square)](LICENSE)
 
 EarthLive Wallpaper downloads the latest available Himawari satellite tiles, validates them, assembles a full-disk Earth image, and applies it as Windows wallpaper.
+
+## 🛠️ Fixed in v1.8.5
+
+- Webb/Hubble photos are now downloaded and set as wallpaper at the largest resolution Flickr actually has available, instead of the capped "Medium" size (~500-800px) that Flickr's RSS feed always links by default — usually gets very close to Flickr's "Original" size.
 
 ## 🛠️ Fixed in v1.8.4
 

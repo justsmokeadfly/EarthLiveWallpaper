@@ -1,6 +1,6 @@
 [project]
 name = "earthlive"
-version = "1.8.4"
+version = "1.8.5"
 description = "Automatically download Earth imagery and discover NASA, James Webb and Hubble space photos as Windows wallpapers."
 readme = "README.md"
 requires-python = ">=3.11"
