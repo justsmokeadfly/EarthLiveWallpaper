@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import threading
+import webbrowser
 from collections.abc import Callable
 from pathlib import Path
 from typing import Any
@@ -12,9 +13,12 @@ from PIL import Image
 from application.app_controller import AppController
 from domain.enums import WallpaperMode
 from infrastructure.nasa.nasa_media_service import NASAPhoto
+from logger import get_logger
 from ui import theme
 from ui.clipboard_fix import enable_clipboard_shortcuts
 from ui.i18n import Translator
+
+_logger = get_logger(__name__)
 
 _THUMB = (360, 210)
 _MODES = {
@@ -157,6 +161,27 @@ class NASAPhotosDialog(ctk.CTkToplevel):
         )
         resolution_label.pack(fill="x", pady=(0, 4))
         self._resolution_labels[photo.title] = resolution_label
+        links_row = ctk.CTkFrame(info, fg_color="transparent")
+        links_row.pack(fill="x", pady=(0, 6))
+        image_link = ctk.CTkLabel(
+            links_row,
+            text="🔗 Открыть изображение",
+            font=(theme.FONT_FAMILY, theme.FONT_SIZE_SMALL, "bold"),
+            text_color=theme.COLOR_ACCENT,
+            cursor="hand2",
+        )
+        image_link.pack(side="left")
+        image_link.bind("<Button-1>", lambda _e, url=photo.image_url: self._open_url(url))
+        if photo.source_url and photo.source_url != photo.image_url:
+            source_link = ctk.CTkLabel(
+                links_row,
+                text="  ·  Источник",
+                font=(theme.FONT_FAMILY, theme.FONT_SIZE_SMALL, "bold"),
+                text_color=theme.COLOR_ACCENT,
+                cursor="hand2",
+            )
+            source_link.pack(side="left")
+            source_link.bind("<Button-1>", lambda _e, url=photo.source_url: self._open_url(url))
         description = photo.description_en if self._language.get() == "EN" else self._descriptions.get(photo.title, photo.description_en)
         description_label = ctk.CTkLabel(info, text=description, anchor="nw", justify="left", wraplength=460, text_color=theme.COLOR_TEXT_SECONDARY)
         description_label.pack(fill="both", expand=True)
@@ -171,6 +196,14 @@ class NASAPhotosDialog(ctk.CTkToplevel):
         actions.pack(fill="x")
         ctk.CTkButton(actions, text="Скачать", command=lambda p=photo: self._download(p)).pack(side="left", padx=(0, 5))
         ctk.CTkButton(actions, text="Установить как обои", command=lambda p=photo, m=mode: self._install(p, m.get())).pack(side="left")
+
+    def _open_url(self, url: str) -> None:
+        if not url:
+            return
+        try:
+            webbrowser.open(url)
+        except Exception:
+            _logger.exception("Failed to open URL: %s", url)
 
     def _toggle_favorite(self, photo: NASAPhoto) -> None:
         favorite = self._controller.toggle_nasa_favorite(photo)
