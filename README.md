@@ -1,4 +1,4 @@
-# 🌍 EarthLive Wallpaper v1.8.3
+# 🌍 EarthLive Wallpaper v1.8.4
 
 > A lightweight Windows desktop application that turns near-real-time Himawari-8/9 satellite imagery into live Earth wallpaper, with NASA, James Webb, Hubble, Cosmic Mix and per-monitor wallpaper controls.
 
@@ -12,6 +12,12 @@
 [![License](https://img.shields.io/badge/license-MIT-green?style=flat-square)](LICENSE)
 
 EarthLive Wallpaper downloads the latest available Himawari satellite tiles, validates them, assembles a full-disk Earth image, and applies it as Windows wallpaper.
+
+## 🛠️ Fixed in v1.8.4
+
+- Fixed Ctrl+C/V/X/A not working in any text field (Settings, photo search) on non-Latin keyboard layouts (e.g. Russian) — a well-known Tk/Windows bug where these shortcuts are bound to the character produced by a key rather than the physical key itself.
+- Added a "NASA API key" setting (optional, stored locally only) so you can use your own free key from [api.nasa.gov](https://api.nasa.gov/) (1000 requests/hour) instead of the shared `DEMO_KEY` (30/hour).
+- Added clickable links on every photo card in the NASA/Webb/Hubble browsers to open the image itself or its source page in your browser.
 
 ## 🛠️ Fixed in v1.8.3
 
