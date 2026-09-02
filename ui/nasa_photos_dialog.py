@@ -13,6 +13,7 @@ from application.app_controller import AppController
 from domain.enums import WallpaperMode
 from infrastructure.nasa.nasa_media_service import NASAPhoto
 from ui import theme
+from ui.clipboard_fix import enable_clipboard_shortcuts
 from ui.i18n import Translator
 
 _THUMB = (360, 210)
@@ -47,6 +48,7 @@ class NASAPhotosDialog(ctk.CTkToplevel):
         self.transient(master)
         self.grab_set()
         self._build()
+        enable_clipboard_shortcuts(self)
         self._load_async()
 
     def _build(self) -> None:

@@ -11,6 +11,7 @@ from application.app_controller import AppController
 from domain.enums import GridSize, Language, Theme, WallpaperMode
 from logger import get_logger
 from ui import theme
+from ui.clipboard_fix import enable_clipboard_shortcuts
 from ui.i18n import Translator
 
 _logger = get_logger(__name__)
@@ -32,6 +33,7 @@ class SettingsDialog(ctk.CTkToplevel):
         self.resizable(False, False)
         self.configure(fg_color=theme.COLOR_BACKGROUND)
         self._build_widgets()
+        enable_clipboard_shortcuts(self)
 
     def _build_widgets(self) -> None:
         container = ctk.CTkScrollableFrame(self, fg_color="transparent")
