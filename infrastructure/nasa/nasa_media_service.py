@@ -33,6 +33,13 @@ _FLICKR_SIZE_SUFFIXES: tuple[tuple[str, int], ...] = (
     ("h", 1600),
     ("b", 1024),
 )
+# Only used by the explicit size picker, not the automatic silent upgrade:
+# "Original" (max_dim=0) has an unknown true resolution without downloading
+# it, which would make the automatic upgrade's resolution label wrong.
+_FLICKR_PICKER_SUFFIXES: tuple[tuple[str, int], ...] = (
+    ("o", 0),
+    *_FLICKR_SIZE_SUFFIXES,
+)
 WEBB_FEED_URL = (
     "https://api.flickr.com/services/feeds/photoset.gne"
     "?set=72177720331299130&nsid=50785054@N03&lang=en-us&format=rss_200"
@@ -65,6 +72,7 @@ class FlickrSize:
 
 
 _FLICKR_SIZE_NAMES: dict[str, str] = {
+    "o": "Original",
     "6k": "XX-Large 6K",
     "5k": "XX-Large 5K",
     "4k": "X-Large 4K",
@@ -175,21 +183,19 @@ class NASAMediaService:
         base, ext = match.group("base"), match.group("ext")
         base_width, base_height = photo.width, photo.height
         sizes: list[FlickrSize] = []
-        with httpx.Client(timeout=8.0, follow_redirects=True) as client:
-            for suffix, max_dim in _FLICKR_SIZE_SUFFIXES:
+        with httpx.Client(timeout=10.0, follow_redirects=True) as client:
+            for suffix, max_dim in _FLICKR_PICKER_SUFFIXES:
                 candidate = f"{base}_{suffix}.{ext}"
-                try:
-                    response = client.head(candidate)
-                except httpx.HTTPError:
-                    continue
-                if response.status_code != 200:
+                if not _flickr_url_exists(client, candidate):
                     continue
                 width, height = base_width, base_height
-                if width and height:
+                if max_dim and width and height:
                     if width >= height:
                         width, height = max_dim, round(max_dim * height / width)
                     else:
                         width, height = round(max_dim * width / height), max_dim
+                elif not max_dim:
+                    width, height = 0, 0
                 name = _FLICKR_SIZE_NAMES.get(suffix, suffix.upper())
                 label = f"{name} ({width} × {height})" if width and height else name
                 sizes.append(FlickrSize(label, width, height, candidate))
@@ -246,7 +252,7 @@ class NASAMediaService:
             )
         if not photos:
             raise RuntimeError(f"Flickr {source} feed contained no usable photos.")
-        with httpx.Client(timeout=8.0, follow_redirects=True) as client:
+        with httpx.Client(timeout=10.0, follow_redirects=True) as client:
             photos = [_upgrade_flickr_photo(photo, client) for photo in photos]
         return photos
 
@@ -305,6 +311,23 @@ class NASAMediaService:
         return result
 
 
+def _flickr_url_exists(client: httpx.Client, url: str) -> bool:
+    """Check if a Flickr-derived-size URL actually resolves.
+
+    Flickr generates non-default sizes on demand at the origin; a HEAD
+    request only reflects what's already cached at the CDN edge (Amazon
+    CloudFront) and can wrongly report "not found" for a size that would
+    succeed on a real GET (which forwards to origin and triggers
+    generation). Use a ranged GET instead, and stream it so we don't
+    actually download the whole image just to check it exists.
+    """
+    try:
+        with client.stream("GET", url, headers={"Range": "bytes=0-0"}) as response:
+            return response.status_code in (200, 206)
+    except httpx.HTTPError:
+        return False
+
+
 def _upgrade_flickr_photo(photo: NASAPhoto, client: httpx.Client) -> NASAPhoto:
     """Probe Flickr's CDN for the largest available derived size.
 
@@ -319,11 +342,7 @@ def _upgrade_flickr_photo(photo: NASAPhoto, client: httpx.Client) -> NASAPhoto:
     base, ext = match.group("base"), match.group("ext")
     for suffix, max_dim in _FLICKR_SIZE_SUFFIXES:
         candidate = f"{base}_{suffix}.{ext}"
-        try:
-            response = client.head(candidate)
-        except httpx.HTTPError:
-            continue
-        if response.status_code != 200:
+        if not _flickr_url_exists(client, candidate):
             continue
         width, height = photo.width, photo.height
         if width and height:

@@ -115,7 +115,7 @@ def test_flickr_photo_upgraded_to_largest_available_size(
     real_client = httpx.Client
 
     def handler(request: httpx.Request) -> httpx.Response:
-        if request.method == "GET":
+        if "flickr.com/services/feeds" in str(request.url):
             return httpx.Response(200, content=xml_realistic_url)
         # Simulate only the "4k" derived size existing for this photo.
         if request.url.path.endswith("_4k.jpg"):
@@ -154,7 +154,7 @@ def test_flickr_photo_keeps_medium_url_when_no_larger_size_exists(
     real_client = httpx.Client
 
     def handler(request: httpx.Request) -> httpx.Response:
-        if request.method == "GET":
+        if "flickr.com/services/feeds" in str(request.url):
             return httpx.Response(200, content=xml_realistic_url)
         return httpx.Response(404)
 
