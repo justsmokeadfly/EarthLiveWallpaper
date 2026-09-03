@@ -7,7 +7,7 @@ from typing import Any
 import httpx
 import pytest
 
-from infrastructure.nasa.nasa_media_service import NASAMediaService
+from infrastructure.nasa.nasa_media_service import NASAMediaService, NASAPhoto
 
 _FLICKR_XML = b"""
 <rss xmlns:media="http://search.yahoo.com/mrss/">
@@ -178,6 +178,62 @@ def test_hubble_uses_same_flickr_parser(monkeypatch: pytest.MonkeyPatch) -> None
     assert len(photos) == 1
     assert photos[0].source == "hubble"
     assert photos[0].thumbnail_url.endswith("thumb.jpg")
+
+
+def test_list_flickr_sizes_returns_every_available_size(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    real_client = httpx.Client
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        path = request.url.path
+        if path.endswith("_4k.jpg") or path.endswith("_k.jpg"):
+            return httpx.Response(200)
+        return httpx.Response(404)
+
+    def make_client(*args: Any, **kwargs: Any) -> httpx.Client:
+        return real_client(transport=httpx.MockTransport(handler))
+
+    monkeypatch.setattr(httpx, "Client", make_client)
+    service = NASAMediaService()
+    photo = NASAPhoto(
+        title="Test",
+        description_en="",
+        image_url="https://live.staticflickr.com/65535/123456789_abc123def0_4k.jpg",
+        source_url="https://www.flickr.com/photos/example/1/",
+        source="webb",
+        width=4096,
+        height=3072,
+    )
+
+    sizes = service.list_flickr_sizes(photo)
+
+    labels = [s.label for s in sizes]
+    assert any("4K" in label for label in labels)
+    assert any("2048" in label for label in labels)
+    assert any(label.startswith("Medium") for label in labels)
+    # Largest available size should come first.
+    assert sizes[0].width == 4096
+
+
+def test_list_flickr_sizes_falls_back_for_non_flickr_url(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    service = NASAMediaService()
+    photo = NASAPhoto(
+        title="Test",
+        description_en="",
+        image_url="https://apod.nasa.gov/apod/some_image.jpg",
+        source_url="https://apod.nasa.gov/apod/ap260831.html",
+        source="nasa",
+        width=1920,
+        height=1080,
+    )
+
+    sizes = service.list_flickr_sizes(photo)
+
+    assert len(sizes) == 1
+    assert sizes[0].url == photo.image_url
 
 
 def test_apod_returns_todays_image(monkeypatch: pytest.MonkeyPatch) -> None:

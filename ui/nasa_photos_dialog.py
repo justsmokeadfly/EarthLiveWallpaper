@@ -4,6 +4,7 @@ from __future__ import annotations
 import threading
 import webbrowser
 from collections.abc import Callable
+from dataclasses import replace
 from pathlib import Path
 from typing import Any
 
@@ -12,7 +13,7 @@ from PIL import Image
 
 from application.app_controller import AppController
 from domain.enums import WallpaperMode
-from infrastructure.nasa.nasa_media_service import NASAPhoto
+from infrastructure.nasa.nasa_media_service import FlickrSize, NASAPhoto
 from logger import get_logger
 from ui import theme
 from ui.clipboard_fix import enable_clipboard_shortcuts
@@ -260,20 +261,59 @@ class NASAPhotosDialog(ctk.CTkToplevel):
         label.configure(text="", image=image)
 
     def _download(self, photo: NASAPhoto) -> None:
-        path = self._unique_path(photo)
-        self._run_transfer(photo, path, success_text=f"Сохранено: {path.name}")
+        def proceed(chosen: NASAPhoto) -> None:
+            path = self._unique_path(chosen)
+            self._run_transfer(chosen, path, success_text=f"Сохранено: {path.name}")
+
+        self._choose_size(photo, proceed)
 
     def _install(self, photo: NASAPhoto, selected_mode: str) -> None:
-        path = self._unique_path(photo)
         mode = _MODES.get(selected_mode, WallpaperMode.FILL)
 
-        def completed() -> None:
-            if self._controller.apply_external_wallpaper(path, mode):
-                self._status.configure(text="Обои установлены!", text_color=theme.COLOR_SUCCESS)
-            else:
-                self._status.configure(text="Не удалось установить обои.", text_color=theme.COLOR_ERROR)
+        def proceed(chosen: NASAPhoto) -> None:
+            path = self._unique_path(chosen)
 
-        self._run_transfer(photo, path, success_callback=completed)
+            def completed() -> None:
+                if self._controller.apply_external_wallpaper(path, mode):
+                    self._status.configure(text="Обои установлены!", text_color=theme.COLOR_SUCCESS)
+                else:
+                    self._status.configure(text="Не удалось установить обои.", text_color=theme.COLOR_ERROR)
+
+            self._run_transfer(chosen, path, success_callback=completed)
+
+        self._choose_size(photo, proceed)
+
+    def _choose_size(self, photo: NASAPhoto, callback: Callable[[NASAPhoto], None]) -> None:
+        if photo.source == "nasa":
+            # NASA APOD already uses NASA's best available (hdurl) - no
+            # Flickr size ladder to choose from.
+            callback(photo)
+            return
+        self._set_busy(True)
+        self._status.configure(text="Определяю доступные размеры…", text_color=theme.COLOR_TEXT_SECONDARY)
+
+        def worker() -> None:
+            try:
+                sizes = self._controller.list_flickr_sizes(photo)
+            except Exception:
+                _logger.exception("Failed to list Flickr sizes for %s", photo.title)
+                sizes = []
+            self.after(0, lambda: self._sizes_ready(photo, sizes, callback))
+
+        threading.Thread(target=worker, daemon=True).start()
+
+    def _sizes_ready(
+        self,
+        photo: NASAPhoto,
+        sizes: list[FlickrSize],
+        callback: Callable[[NASAPhoto], None],
+    ) -> None:
+        self._set_busy(False)
+        self._status.configure(text="")
+        if len(sizes) <= 1:
+            callback(photo)
+            return
+        _SizePickerDialog(self, photo, sizes, callback)
 
     def _run_transfer(self, photo: NASAPhoto, destination: Path, success_text: str | None = None, success_callback: Callable[[], None] | None = None) -> None:
         self._set_busy(True)
@@ -322,6 +362,64 @@ class NASAPhotosDialog(ctk.CTkToplevel):
     def _unique_path(self, photo: NASAPhoto) -> Path:
         suffix = ".png" if ".png" in photo.image_url.lower() else ".jpg"
         return self._controller.wallpapers_dir / f"{photo.source}_{_safe_name(photo.title)}{suffix}"
+
+
+class _SizePickerDialog(ctk.CTkToplevel):
+    """Lets the user pick which available Flickr size to download."""
+
+    def __init__(
+        self,
+        master: ctk.CTkToplevel,
+        photo: NASAPhoto,
+        sizes: list[FlickrSize],
+        callback: Callable[[NASAPhoto], None],
+    ) -> None:
+        super().__init__(master)
+        self._photo = photo
+        self._callback = callback
+        self._by_label = {size.label: size for size in sizes}
+        self.title("Выбор разрешения")
+        self.geometry("380x460")
+        self.minsize(340, 320)
+        self.configure(fg_color=theme.COLOR_BACKGROUND)
+        self.transient(master)
+        self.grab_set()
+        ctk.CTkLabel(
+            self,
+            text=photo.title,
+            font=(theme.FONT_FAMILY, theme.FONT_SIZE_BODY, "bold"),
+            text_color=theme.COLOR_TEXT_PRIMARY,
+            wraplength=340,
+            justify="left",
+        ).pack(padx=16, pady=(16, 4), anchor="w")
+        ctk.CTkLabel(
+            self,
+            text="Доступные размеры на Flickr:",
+            text_color=theme.COLOR_TEXT_SECONDARY,
+        ).pack(padx=16, anchor="w", pady=(0, 8))
+        scroll = ctk.CTkScrollableFrame(self, fg_color="transparent")
+        scroll.pack(fill="both", expand=True, padx=16)
+        self._selected = ctk.StringVar(value=sizes[0].label)
+        for size in sizes:
+            ctk.CTkRadioButton(scroll, text=size.label, variable=self._selected, value=size.label).pack(
+                anchor="w", pady=5
+            )
+        buttons = ctk.CTkFrame(self, fg_color="transparent")
+        buttons.pack(fill="x", padx=16, pady=16)
+        ctk.CTkButton(buttons, text="Отмена", fg_color=theme.COLOR_SURFACE, command=self._cancel).pack(
+            side="left"
+        )
+        ctk.CTkButton(buttons, text="Продолжить", command=self._confirm).pack(side="right")
+        enable_clipboard_shortcuts(self)
+
+    def _confirm(self) -> None:
+        size = self._by_label[self._selected.get()]
+        chosen = replace(self._photo, image_url=size.url, width=size.width, height=size.height)
+        self.destroy()
+        self._callback(chosen)
+
+    def _cancel(self) -> None:
+        self.destroy()
 
 
 def _safe_name(value: str) -> str:

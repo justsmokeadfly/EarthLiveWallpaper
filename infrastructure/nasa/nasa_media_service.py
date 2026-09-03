@@ -55,6 +55,27 @@ ProgressCallback = Callable[[int, int], None]
 
 
 @dataclass(frozen=True)
+class FlickrSize:
+    """One selectable download size for a Flickr-hosted photo."""
+
+    label: str
+    width: int
+    height: int
+    url: str
+
+
+_FLICKR_SIZE_NAMES: dict[str, str] = {
+    "6k": "XX-Large 6K",
+    "5k": "XX-Large 5K",
+    "4k": "X-Large 4K",
+    "3k": "Large 3K",
+    "k": "Large 2048",
+    "h": "Large 1600",
+    "b": "Large 1024",
+}
+
+
+@dataclass(frozen=True)
 class NASAPhoto:
     title: str
     description_en: str
@@ -138,6 +159,45 @@ class NASAMediaService:
         return self._get_flickr_photos(
             (HUBBLE_FEED_URL, HUBBLE_FEED_FALLBACK_URL), "hubble", limit
         )
+
+    def list_flickr_sizes(self, photo: NASAPhoto) -> list[FlickrSize]:
+        """Return every download size actually available for a Flickr photo.
+
+        Unlike the automatic upgrade applied when the photo list loads
+        (which stops at the first, largest size it finds), this probes
+        every known suffix so the user can see and pick from the same
+        ladder of sizes Flickr's own "View all sizes" page shows.
+        Largest first; always includes at least the current image_url.
+        """
+        match = _FLICKR_URL_RE.match(photo.image_url)
+        if match is None:
+            return [FlickrSize("Текущий размер", photo.width, photo.height, photo.image_url)]
+        base, ext = match.group("base"), match.group("ext")
+        base_width, base_height = photo.width, photo.height
+        sizes: list[FlickrSize] = []
+        with httpx.Client(timeout=8.0, follow_redirects=True) as client:
+            for suffix, max_dim in _FLICKR_SIZE_SUFFIXES:
+                candidate = f"{base}_{suffix}.{ext}"
+                try:
+                    response = client.head(candidate)
+                except httpx.HTTPError:
+                    continue
+                if response.status_code != 200:
+                    continue
+                width, height = base_width, base_height
+                if width and height:
+                    if width >= height:
+                        width, height = max_dim, round(max_dim * height / width)
+                    else:
+                        width, height = round(max_dim * width / height), max_dim
+                name = _FLICKR_SIZE_NAMES.get(suffix, suffix.upper())
+                label = f"{name} ({width} × {height})" if width and height else name
+                sizes.append(FlickrSize(label, width, height, candidate))
+        medium_url = f"{base}.{ext}"
+        medium_label = f"Medium ({base_width} × {base_height})" if base_width and base_height else "Medium"
+        if not any(s.url == medium_url for s in sizes):
+            sizes.append(FlickrSize(medium_label, base_width, base_height, medium_url))
+        return sizes or [FlickrSize("Текущий размер", photo.width, photo.height, photo.image_url)]
 
     def _get_flickr_photos(
         self, feed_urls: tuple[str, str], source: str, limit: int

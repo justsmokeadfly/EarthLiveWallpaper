@@ -17,7 +17,7 @@ from domain.entities import AppConfig
 from domain.enums import UpdateOutcome, WallpaperMode
 from domain.interfaces import StateRepository, TimelapseGenerator
 from infrastructure.nasa.favorites_repository import FavoritesRepository
-from infrastructure.nasa.nasa_media_service import NASAMediaService, NASAPhoto
+from infrastructure.nasa.nasa_media_service import FlickrSize, NASAMediaService, NASAPhoto
 from infrastructure.persistence.filesystem_cache_manager import FilesystemCacheManager
 from infrastructure.system.autostart import AutostartManager
 from infrastructure.wallpaper.multi_monitor_wallpaper_setter import (
@@ -190,6 +190,9 @@ class AppController:
 
     def get_hubble_photos(self, limit: int = 24) -> list[NASAPhoto]:
         return self._nasa_media.get_hubble_photos(limit)
+
+    def list_flickr_sizes(self, photo: NASAPhoto) -> list[FlickrSize]:
+        return self._nasa_media.list_flickr_sizes(photo)
 
     def download_nasa_photo(
         self,
