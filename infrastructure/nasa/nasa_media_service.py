@@ -183,7 +183,7 @@ class NASAMediaService:
         base, ext = match.group("base"), match.group("ext")
         base_width, base_height = photo.width, photo.height
         sizes: list[FlickrSize] = []
-        with httpx.Client(timeout=10.0, follow_redirects=True) as client:
+        with httpx.Client(timeout=15.0, follow_redirects=True) as client:
             for suffix, max_dim in _FLICKR_PICKER_SUFFIXES:
                 candidate = f"{base}_{suffix}.{ext}"
                 if not _flickr_url_exists(client, candidate):
@@ -252,7 +252,7 @@ class NASAMediaService:
             )
         if not photos:
             raise RuntimeError(f"Flickr {source} feed contained no usable photos.")
-        with httpx.Client(timeout=10.0, follow_redirects=True) as client:
+        with httpx.Client(timeout=15.0, follow_redirects=True) as client:
             photos = [_upgrade_flickr_photo(photo, client) for photo in photos]
         return photos
 
@@ -318,12 +318,16 @@ def _flickr_url_exists(client: httpx.Client, url: str) -> bool:
     request only reflects what's already cached at the CDN edge (Amazon
     CloudFront) and can wrongly report "not found" for a size that would
     succeed on a real GET (which forwards to origin and triggers
-    generation). Use a ranged GET instead, and stream it so we don't
-    actually download the whole image just to check it exists.
+    generation). A "Range" header on the *first* request for a
+    not-yet-generated size can also get rejected by that on-demand
+    pipeline even though a plain GET would succeed, so this sends a
+    normal GET - exactly what a browser tab would do - and closes the
+    stream immediately after reading the status line, without ever
+    reading the (potentially multi-megabyte) body.
     """
     try:
-        with client.stream("GET", url, headers={"Range": "bytes=0-0"}) as response:
-            return response.status_code in (200, 206)
+        with client.stream("GET", url) as response:
+            return response.status_code == 200
     except httpx.HTTPError:
         return False
 
