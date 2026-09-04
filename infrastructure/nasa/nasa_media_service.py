@@ -327,7 +327,7 @@ def _flickr_url_exists(client: httpx.Client, url: str) -> bool:
     """
     try:
         with client.stream("GET", url) as response:
-            return response.status_code == 200
+            return bool(response.status_code == 200)
     except httpx.HTTPError:
         return False
 
