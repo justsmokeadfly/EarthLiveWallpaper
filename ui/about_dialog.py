@@ -11,7 +11,7 @@ from ui import theme
 from ui.i18n import Translator
 
 _logger = get_logger(__name__)
-APP_VERSION = "1.8.7"
+APP_VERSION = "1.8.8"
 APP_AUTHOR = "@justsmokeadfly"
 SOURCE_URL = "https://github.com/justsmokeadfly/EarthLiveWallpaper"
 AUTHOR_URL = "https://github.com/justsmokeadfly"
