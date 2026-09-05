@@ -3,7 +3,7 @@
 ; The release workflow injects the version from the Git tag before building.
 
 #define MyAppName "EarthLive Wallpaper"
-#define MyAppVersion "1.9.0"
+#define MyAppVersion "1.9.1"
 #define MyAppAuthor "justsmokeadfly"
 #define MyAppURL "https://github.com/justsmokeadfly/EarthLiveWallpaper"
 #define MyAppExeName "EarthLive.exe"
