@@ -43,7 +43,7 @@ _FLICKR_SIZE_SUFFIXES: tuple[tuple[str, int], ...] = (
 # photo, so guessing is unreliable; this page always links to a per-size
 # page that reveals the real one.
 _FLICKR_SIZE_LIST_RE = re.compile(
-    r'/sizes/(?P<code>[a-z0-9]+)/"[^>]*>(?P<label>[^<]+)</a>\s*\(\s*(?P<w>\d+)\s*[×x]\s*(?P<h>\d+)\s*\)',
+    r'/sizes/(?P<code>[a-z0-9]+)/"[^>]*>(?P<label>[^<]+)</a>\s*<small>\(\s*(?P<w>\d+)\s*[×x]\s*(?P<h>\d+)\s*\)</small>',
 )
 _FLICKR_IMG_SRC_RE = re.compile(
     r'(https?://[^"\'\s]*staticflickr\.com/\d+/\d+_[0-9a-fA-F]+(?:_[a-z0-9]+)?\.(?:jpg|jpeg|png|gif))',

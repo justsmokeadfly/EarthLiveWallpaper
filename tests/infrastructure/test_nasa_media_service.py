@@ -188,9 +188,11 @@ def test_list_flickr_sizes_scrapes_all_sizes_page(
     # default on the listing page) and "X-Large 4K" (needing its own page
     # fetch) deliberately use different secrets here.
     listing_html = """
-    <a href="/photos/example/1/sizes/k/">Large 2048</a> (2031 &times; 2048)
-    <a href="/photos/example/1/sizes/4k/">X-Large 4K</a> (4061 &times; 4096)
-    <a href="/photos/example/1/photo_download.gne?size=k&amp;id=1&amp;secret=aaaa111111">
+    <a href="/photos/example/1/sizes/k/">Large 2048</a>
+    <small>(2031 &times; 2048)</small>
+    <a href="/photos/example/1/sizes/4k/">X-Large 4K</a>
+    <small>(4061 &times; 4096)</small>
+    <a href="https://www.flickr.com/photo_download.gne?size=k&id=1&secret=aaaa111111">
         Download the Large 2048 size
     </a>
     <img src="https://live.staticflickr.com/65535/1_aaaa111111_k.jpg">
@@ -266,6 +268,110 @@ def test_list_flickr_sizes_falls_back_to_guessing_on_unparseable_page(
     assert len(sizes) == 2
     assert any(s.url.endswith("_k.jpg") for s in sizes)
     assert any(s.label.startswith("Medium") for s in sizes)
+
+
+def test_list_flickr_sizes_parses_real_flickr_html_excerpt(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    # A real excerpt from Flickr's actual "all sizes" page HTML (captured
+    # directly from production), including the exact whitespace/tag
+    # nesting Flickr uses - this is what caught the original bug: the
+    # dimensions sit inside a separate <small> tag, not right after </a>.
+    real_excerpt = """
+<div id="all-sizes-header">
+	<dl>
+		<dt>Download</dt>
+		<dd>
+			<a href="https://www.flickr.com/photo_download.gne?size=l&id=55491800186&secret=abd6c3a708">
+					Download the Large 1024 size of this photo
+				</a>
+		</dd>
+	</dl>
+	<dl>
+		<dt>Sizes</dt>
+		<dd>
+				<a href="/photos/nasawebbtelescope/55491800186/sizes/o/">Original</a>
+				<small>(4298 &times; 4335)</small>
+			<br>
+			<ol class="sizes-list">
+					<li>
+					<ol>
+																<li>
+												<a href="/photos/nasawebbtelescope/55491800186/sizes/sq/">Square 75</a>
+												<small>(75 &times; 75)</small>
+						</li>
+					</ol>
+				</li>
+						<li>
+					<ol>
+																<li>
+												Large 1024
+												<small>(1015 &times; 1024)</small>
+						</li>
+																<li>
+												<a href="/photos/nasawebbtelescope/55491800186/sizes/h/">Large 1600</a>
+												<small>(1586 &times; 1600)</small>
+						</li>
+																<li>
+												<a href="/photos/nasawebbtelescope/55491800186/sizes/k/">Large 2048</a>
+												<small>(2031 &times; 2048)</small>
+						</li>
+					</ol>
+				</li>
+						<li>
+					<ol>
+																<li>
+												<a href="/photos/nasawebbtelescope/55491800186/sizes/4k/">X-Large 4K</a>
+												<small>(4061 &times; 4096)</small>
+						</li>
+					</ol>
+				</li>
+			</ol>
+		</dd>
+	</dl>
+</div>
+<div id="allsizes-photo">
+		<img src="https://live.staticflickr.com/65535/55491800186_abd6c3a708_b.jpg">
+</div>
+"""
+    real_client = httpx.Client
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        if request.url.path.endswith("/sizes/"):
+            return httpx.Response(200, text=real_excerpt)
+        return httpx.Response(404)
+
+    def make_client(*args: Any, **kwargs: Any) -> httpx.Client:
+        return real_client(transport=httpx.MockTransport(handler))
+
+    monkeypatch.setattr(httpx, "Client", make_client)
+    service = NASAMediaService()
+    photo = NASAPhoto(
+        title="Test",
+        description_en="",
+        image_url="https://live.staticflickr.com/65535/55491800186_abd6c3a708_b.jpg",
+        source_url="https://www.flickr.com/photos/nasawebbtelescope/55491800186/",
+        source="webb",
+        width=1015,
+        height=1024,
+    )
+
+    sizes = service.list_flickr_sizes(photo)
+    labels = [s.label for s in sizes]
+
+    # All linked sizes found, largest first. "Large 1024" is deliberately
+    # absent from links (Flickr renders the currently-shown default size
+    # as plain text with no href) - covered separately by the download
+    # link/img src extraction, not this list.
+    assert any("X-Large 4K" in label for label in labels)
+    assert any("Large 2048" in label for label in labels)
+    assert any("Large 1600" in label for label in labels)
+    assert any("Original" in label for label in labels)
+    assert any("Square 75" in label for label in labels)
+    assert "X-Large 4K" in sizes[0].label
+    original = next(s for s in sizes if "Original" in s.label)
+    assert original.width == 4298
+    assert original.height == 4335
 
 
 def test_list_flickr_sizes_falls_back_for_non_flickr_url(
