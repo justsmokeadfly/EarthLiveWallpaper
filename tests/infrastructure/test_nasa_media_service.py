@@ -180,14 +180,67 @@ def test_hubble_uses_same_flickr_parser(monkeypatch: pytest.MonkeyPatch) -> None
     assert photos[0].thumbnail_url.endswith("thumb.jpg")
 
 
-def test_list_flickr_sizes_returns_every_available_size(
+def test_list_flickr_sizes_scrapes_all_sizes_page(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    # Mirrors what real Flickr pages look like: different size tiers can
+    # use different secrets for the same photo, so "Large 2048" (shown by
+    # default on the listing page) and "X-Large 4K" (needing its own page
+    # fetch) deliberately use different secrets here.
+    listing_html = """
+    <a href="/photos/example/1/sizes/k/">Large 2048</a> (2031 &times; 2048)
+    <a href="/photos/example/1/sizes/4k/">X-Large 4K</a> (4061 &times; 4096)
+    <a href="/photos/example/1/photo_download.gne?size=k&amp;id=1&amp;secret=aaaa111111">
+        Download the Large 2048 size
+    </a>
+    <img src="https://live.staticflickr.com/65535/1_aaaa111111_k.jpg">
+    """
+    size_4k_html = '<img src="https://live.staticflickr.com/65535/1_bbbb222222_4k.jpg">'
+    real_client = httpx.Client
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        if request.url.path.endswith("/sizes/"):
+            return httpx.Response(200, text=listing_html)
+        if request.url.path.endswith("/sizes/4k/"):
+            return httpx.Response(200, text=size_4k_html)
+        return httpx.Response(404)
+
+    def make_client(*args: Any, **kwargs: Any) -> httpx.Client:
+        return real_client(transport=httpx.MockTransport(handler))
+
+    monkeypatch.setattr(httpx, "Client", make_client)
+    service = NASAMediaService()
+    photo = NASAPhoto(
+        title="Test",
+        description_en="",
+        image_url="https://live.staticflickr.com/65535/1_aaaa111111_k.jpg",
+        source_url="https://www.flickr.com/photos/example/1/",
+        source="webb",
+        width=2031,
+        height=2048,
+    )
+
+    sizes = service.list_flickr_sizes(photo)
+
+    assert len(sizes) == 2
+    # Largest (X-Large 4K) first.
+    assert "4K" in sizes[0].label
+    assert sizes[0].url.endswith("_bbbb222222_4k.jpg")
+    assert sizes[0].width == 4061
+    assert "2048" in sizes[1].label
+    assert sizes[1].url.endswith("_aaaa111111_k.jpg")
+
+
+def test_list_flickr_sizes_falls_back_to_guessing_on_unparseable_page(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     real_client = httpx.Client
 
     def handler(request: httpx.Request) -> httpx.Response:
-        path = request.url.path
-        if path.endswith("_4k.jpg") or path.endswith("_k.jpg"):
+        if request.url.path.endswith("/sizes/"):
+            # Markup Flickr changed / doesn't match our scraping pattern.
+            return httpx.Response(200, text="<html><body>no size list here</body></html>")
+        if request.url.path.endswith("_k.jpg"):
             return httpx.Response(200)
         return httpx.Response(404)
 
@@ -199,21 +252,20 @@ def test_list_flickr_sizes_returns_every_available_size(
     photo = NASAPhoto(
         title="Test",
         description_en="",
-        image_url="https://live.staticflickr.com/65535/123456789_abc123def0_4k.jpg",
+        image_url="https://live.staticflickr.com/65535/1_aaaa111111.jpg",
         source_url="https://www.flickr.com/photos/example/1/",
         source="webb",
-        width=4096,
-        height=3072,
+        width=793,
+        height=800,
     )
 
     sizes = service.list_flickr_sizes(photo)
 
-    labels = [s.label for s in sizes]
-    assert any("4K" in label for label in labels)
-    assert any("2048" in label for label in labels)
-    assert any(label.startswith("Medium") for label in labels)
-    # Largest available size should come first.
-    assert sizes[0].width == 4096
+    # Fell back to guessing: "k" suffix exists in the mock, medium is
+    # always included too.
+    assert len(sizes) == 2
+    assert any(s.url.endswith("_k.jpg") for s in sizes)
+    assert any(s.label.startswith("Medium") for s in sizes)
 
 
 def test_list_flickr_sizes_falls_back_for_non_flickr_url(
