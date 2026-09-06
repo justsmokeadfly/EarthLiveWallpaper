@@ -1,4 +1,4 @@
-# 🌍 EarthLive Wallpaper v1.9.1
+# 🌍 EarthLive Wallpaper v1.9.2
 
 > A lightweight Windows desktop application that turns near-real-time Himawari-8/9 satellite imagery into live Earth wallpaper, with NASA, James Webb, Hubble, Cosmic Mix and per-monitor wallpaper controls.
 
@@ -12,6 +12,10 @@
 [![License](https://img.shields.io/badge/license-MIT-green?style=flat-square)](LICENSE)
 
 EarthLive Wallpaper downloads the latest available Himawari satellite tiles, validates them, assembles a full-disk Earth image, and applies it as Windows wallpaper.
+
+## 🎯 v1.9.2
+
+- Fixed the NASA/Webb/Hubble/Cosmic Mix buttons, dialog titles, and status messages staying in Russian regardless of the language setting - they were hardcoded and bypassed the app's translation system entirely.
 
 ## 🎯 v1.9.1
 
