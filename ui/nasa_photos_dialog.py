@@ -45,8 +45,12 @@ class NASAPhotosDialog(ctk.CTkToplevel):
         self._resolution_labels: dict[str, ctk.CTkLabel] = {}
         self._favorite_buttons: dict[str, ctk.CTkButton] = {}
         self._busy = 0
-        titles = {"nasa": "NASA Fotos", "webb": "James Webb Fotos", "hubble": "Hubble Fotos"}
-        self.title(titles.get(self._source, "Space Fotos"))
+        titles = {
+            "nasa": self._tr.get("nasa_dialog.title.nasa"),
+            "webb": self._tr.get("nasa_dialog.title.webb"),
+            "hubble": self._tr.get("nasa_dialog.title.hubble"),
+        }
+        self.title(titles.get(self._source, self._tr.get("nasa_dialog.title.default")))
         self.geometry("1040x800")
         self.minsize(860, 660)
         self.configure(fg_color=theme.COLOR_BACKGROUND)
@@ -59,12 +63,16 @@ class NASAPhotosDialog(ctk.CTkToplevel):
     def _build(self) -> None:
         header = ctk.CTkFrame(self, fg_color="transparent")
         header.pack(fill="x", padx=theme.PADDING, pady=theme.PADDING)
-        heading = {"nasa": "🚀 NASA Fotos", "webb": "🔭 James Webb Fotos", "hubble": "🛰️ Hubble Fotos"}
-        ctk.CTkLabel(header, text=heading.get(self._source, "🌌 Space Fotos"), font=(theme.FONT_FAMILY, theme.FONT_SIZE_TITLE, "bold"), text_color=theme.COLOR_TEXT_PRIMARY).pack(side="left")
-        self._search = ctk.CTkEntry(header, placeholder_text="Поиск по названию и описанию…")
+        heading = {
+            "nasa": self._tr.get("nasa_dialog.heading.nasa"),
+            "webb": self._tr.get("nasa_dialog.heading.webb"),
+            "hubble": self._tr.get("nasa_dialog.heading.hubble"),
+        }
+        ctk.CTkLabel(header, text=heading.get(self._source, self._tr.get("nasa_dialog.heading.default")), font=(theme.FONT_FAMILY, theme.FONT_SIZE_TITLE, "bold"), text_color=theme.COLOR_TEXT_PRIMARY).pack(side="left")
+        self._search = ctk.CTkEntry(header, placeholder_text=self._tr.get("nasa_dialog.search_placeholder"))
         self._search.pack(side="left", fill="x", expand=True, padx=12)
         self._search.bind("<KeyRelease>", self._search_changed)
-        self._favorites_only = ctk.CTkCheckBox(header, text="⭐ Избранное", command=self._search_changed)
+        self._favorites_only = ctk.CTkCheckBox(header, text=self._tr.get("nasa_dialog.favorites_only"), command=self._search_changed)
         self._favorites_only.pack(side="left", padx=(0, 12))
         self._language = ctk.CTkSegmentedButton(header, values=["RU", "EN"], command=self._language_changed)
         self._language.set("RU")
@@ -72,7 +80,7 @@ class NASAPhotosDialog(ctk.CTkToplevel):
         self._progress = ctk.CTkProgressBar(self, mode="indeterminate", corner_radius=theme.CORNER_RADIUS)
         self._progress.start()
         self._progress.pack(fill="x", padx=theme.PADDING, pady=(0, 6))
-        self._status = ctk.CTkLabel(self, text="Загрузка фотографий…", text_color=theme.COLOR_TEXT_SECONDARY)
+        self._status = ctk.CTkLabel(self, text=self._tr.get("nasa_dialog.loading"), text_color=theme.COLOR_TEXT_SECONDARY)
         self._status.pack(pady=(0, 6))
         self._scroll = ctk.CTkScrollableFrame(self, fg_color="transparent")
         self._scroll.pack(fill="both", expand=True, padx=theme.PADDING, pady=(0, theme.PADDING))
@@ -104,7 +112,7 @@ class NASAPhotosDialog(ctk.CTkToplevel):
     def _failed(self, message: str) -> None:
         self._progress.stop()
         self._set_busy(False)
-        self._status.configure(text=f"Ошибка загрузки: {message}", text_color=theme.COLOR_ERROR)
+        self._status.configure(text=self._tr.get("nasa_dialog.load_error", message=message), text_color=theme.COLOR_ERROR)
 
     def _language_changed(self, value: str) -> None:
         for photo in self._photos:
@@ -135,14 +143,14 @@ class NASAPhotosDialog(ctk.CTkToplevel):
         self._favorite_buttons.clear()
         for photo in filtered:
             self._add_card(photo)
-        self._status.configure(text=f"Показано: {len(filtered)} из {len(self._photos)}")
+        self._status.configure(text=self._tr.get("nasa_dialog.shown_count", shown=str(len(filtered)), total=str(len(self._photos))))
 
     def _add_card(self, photo: NASAPhoto) -> None:
         card = ctk.CTkFrame(self._scroll, fg_color=theme.COLOR_SURFACE, corner_radius=theme.CORNER_RADIUS)
         card.pack(fill="x", pady=7)
         body = ctk.CTkFrame(card, fg_color="transparent")
         body.pack(fill="x", padx=10, pady=10)
-        preview = ctk.CTkLabel(body, text="Превью…", width=360, height=210)
+        preview = ctk.CTkLabel(body, text=self._tr.get("nasa_dialog.preview_loading"), width=360, height=210)
         preview.pack(side="left", padx=(0, 12))
         threading.Thread(target=self._load_preview, args=(photo, preview), daemon=True).start()
         info = ctk.CTkFrame(body, fg_color="transparent")
@@ -155,7 +163,7 @@ class NASAPhotosDialog(ctk.CTkToplevel):
         self._favorite_buttons[photo.title] = favorite
         resolution_label = ctk.CTkLabel(
             info,
-            text=_format_resolution(photo.width, photo.height),
+            text=self._format_resolution(photo.width, photo.height),
             anchor="w",
             text_color=theme.COLOR_TEXT_SECONDARY,
             font=(theme.FONT_FAMILY, theme.FONT_SIZE_SMALL),
@@ -166,7 +174,7 @@ class NASAPhotosDialog(ctk.CTkToplevel):
         links_row.pack(fill="x", pady=(0, 6))
         image_link = ctk.CTkLabel(
             links_row,
-            text="🔗 Открыть изображение",
+            text=self._tr.get("nasa_dialog.open_image"),
             font=(theme.FONT_FAMILY, theme.FONT_SIZE_SMALL, "bold"),
             text_color=theme.COLOR_ACCENT,
             cursor="hand2",
@@ -176,7 +184,7 @@ class NASAPhotosDialog(ctk.CTkToplevel):
         if photo.source_url and photo.source_url != photo.image_url:
             source_link = ctk.CTkLabel(
                 links_row,
-                text="  ·  Источник",
+                text=self._tr.get("nasa_dialog.source"),
                 font=(theme.FONT_FAMILY, theme.FONT_SIZE_SMALL, "bold"),
                 text_color=theme.COLOR_ACCENT,
                 cursor="hand2",
@@ -195,8 +203,8 @@ class NASAPhotosDialog(ctk.CTkToplevel):
         mode.pack(fill="x", pady=(8, 5))
         actions = ctk.CTkFrame(parent, fg_color="transparent")
         actions.pack(fill="x")
-        ctk.CTkButton(actions, text="Скачать", command=lambda p=photo: self._download(p)).pack(side="left", padx=(0, 5))
-        ctk.CTkButton(actions, text="Установить как обои", command=lambda p=photo, m=mode: self._install(p, m.get())).pack(side="left")
+        ctk.CTkButton(actions, text=self._tr.get("nasa_dialog.download"), command=lambda p=photo: self._download(p)).pack(side="left", padx=(0, 5))
+        ctk.CTkButton(actions, text=self._tr.get("nasa_dialog.install_wallpaper"), command=lambda p=photo, m=mode: self._install(p, m.get())).pack(side="left")
 
     def _open_url(self, url: str) -> None:
         if not url:
@@ -249,12 +257,18 @@ class NASAPhotosDialog(ctk.CTkToplevel):
                 img = ctk.CTkImage(light_image=image.copy(), dark_image=image.copy(), size=image.size)
             self.after(0, lambda: self._set_preview(label, img))
         except Exception:
-            self.after(0, lambda: label.configure(text="Превью недоступно"))
+            self.after(0, lambda: label.configure(text=self._tr.get("nasa_dialog.preview_unavailable")))
 
     def _set_resolution(self, photo: NASAPhoto, size: tuple[int, int]) -> None:
         label = self._resolution_labels.get(photo.title)
         if label is not None:
-            label.configure(text=_format_resolution(*size))
+            label.configure(text=self._format_resolution(*size))
+
+    def _format_resolution(self, width: int, height: int) -> str:
+        if not width or not height:
+            return self._tr.get("nasa_dialog.resolution_pending")
+        megapixels = (width * height) / 1_000_000
+        return self._tr.get("nasa_dialog.resolution", width=str(width), height=str(height), megapixels=f"{megapixels:.1f}")
 
     def _set_preview(self, label: ctk.CTkLabel, image: ctk.CTkImage) -> None:
         self._refs.append(image)
@@ -263,7 +277,7 @@ class NASAPhotosDialog(ctk.CTkToplevel):
     def _download(self, photo: NASAPhoto) -> None:
         def proceed(chosen: NASAPhoto) -> None:
             path = self._unique_path(chosen)
-            self._run_transfer(chosen, path, success_text=f"Сохранено: {path.name}")
+            self._run_transfer(chosen, path, success_text=self._tr.get("nasa_dialog.saved", name=path.name))
 
         self._choose_size(photo, proceed)
 
@@ -275,9 +289,9 @@ class NASAPhotosDialog(ctk.CTkToplevel):
 
             def completed() -> None:
                 if self._controller.apply_external_wallpaper(path, mode):
-                    self._status.configure(text="Обои установлены!", text_color=theme.COLOR_SUCCESS)
+                    self._status.configure(text=self._tr.get("nasa_dialog.wallpaper_applied"), text_color=theme.COLOR_SUCCESS)
                 else:
-                    self._status.configure(text="Не удалось установить обои.", text_color=theme.COLOR_ERROR)
+                    self._status.configure(text=self._tr.get("nasa_dialog.wallpaper_apply_failed"), text_color=theme.COLOR_ERROR)
 
             self._run_transfer(chosen, path, success_callback=completed)
 
@@ -290,7 +304,7 @@ class NASAPhotosDialog(ctk.CTkToplevel):
             callback(photo)
             return
         self._set_busy(True)
-        self._status.configure(text="Определяю доступные размеры…", text_color=theme.COLOR_TEXT_SECONDARY)
+        self._status.configure(text=self._tr.get("nasa_dialog.detecting_sizes"), text_color=theme.COLOR_TEXT_SECONDARY)
 
         def worker() -> None:
             try:
@@ -313,14 +327,14 @@ class NASAPhotosDialog(ctk.CTkToplevel):
         if len(sizes) <= 1:
             callback(photo)
             return
-        _SizePickerDialog(self, photo, sizes, callback)
+        _SizePickerDialog(self, self._tr, photo, sizes, callback)
 
     def _run_transfer(self, photo: NASAPhoto, destination: Path, success_text: str | None = None, success_callback: Callable[[], None] | None = None) -> None:
         self._set_busy(True)
         self._progress.configure(mode="determinate")
         self._progress.set(0.0)
         self._progress.stop()
-        self._status.configure(text="Скачивание…", text_color=theme.COLOR_TEXT_SECONDARY)
+        self._status.configure(text=self._tr.get("nasa_dialog.downloading"), text_color=theme.COLOR_TEXT_SECONDARY)
 
         def worker() -> None:
             try:
@@ -350,7 +364,7 @@ class NASAPhotosDialog(ctk.CTkToplevel):
     def _transfer_failed(self, message: str) -> None:
         self._set_busy(False)
         self._progress.set(0.0)
-        self._status.configure(text=f"Ошибка скачивания: {message}", text_color=theme.COLOR_ERROR)
+        self._status.configure(text=self._tr.get("nasa_dialog.download_error", message=message), text_color=theme.COLOR_ERROR)
 
     def _set_busy(self, busy: bool) -> None:
         self._busy = max(0, self._busy + (1 if busy else -1))
@@ -370,15 +384,17 @@ class _SizePickerDialog(ctk.CTkToplevel):
     def __init__(
         self,
         master: ctk.CTkToplevel,
+        translator: Translator,
         photo: NASAPhoto,
         sizes: list[FlickrSize],
         callback: Callable[[NASAPhoto], None],
     ) -> None:
         super().__init__(master)
+        self._tr = translator
         self._photo = photo
         self._callback = callback
         self._by_label = {size.label: size for size in sizes}
-        self.title("Выбор разрешения")
+        self.title(self._tr.get("size_picker.title"))
         self.geometry("380x460")
         self.minsize(340, 320)
         self.configure(fg_color=theme.COLOR_BACKGROUND)
@@ -394,7 +410,7 @@ class _SizePickerDialog(ctk.CTkToplevel):
         ).pack(padx=16, pady=(16, 4), anchor="w")
         ctk.CTkLabel(
             self,
-            text="Доступные размеры на Flickr:",
+            text=self._tr.get("size_picker.available_sizes"),
             text_color=theme.COLOR_TEXT_SECONDARY,
         ).pack(padx=16, anchor="w", pady=(0, 8))
         scroll = ctk.CTkScrollableFrame(self, fg_color="transparent")
@@ -406,10 +422,10 @@ class _SizePickerDialog(ctk.CTkToplevel):
             )
         buttons = ctk.CTkFrame(self, fg_color="transparent")
         buttons.pack(fill="x", padx=16, pady=16)
-        ctk.CTkButton(buttons, text="Отмена", fg_color=theme.COLOR_SURFACE, command=self._cancel).pack(
+        ctk.CTkButton(buttons, text=self._tr.get("button.cancel"), fg_color=theme.COLOR_SURFACE, command=self._cancel).pack(
             side="left"
         )
-        ctk.CTkButton(buttons, text="Продолжить", command=self._confirm).pack(side="right")
+        ctk.CTkButton(buttons, text=self._tr.get("size_picker.continue"), command=self._confirm).pack(side="right")
         enable_clipboard_shortcuts(self)
 
     def _confirm(self) -> None:
@@ -427,8 +443,3 @@ def _safe_name(value: str) -> str:
     return value[:100] or "photo"
 
 
-def _format_resolution(width: int, height: int) -> str:
-    if not width or not height:
-        return "Разрешение: определяется…"
-    megapixels = (width * height) / 1_000_000
-    return f"Разрешение: {width} × {height} ({megapixels:.1f} Мп)"

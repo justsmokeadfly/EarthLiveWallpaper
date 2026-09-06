@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import os
+import threading
 from collections.abc import Callable
 from datetime import datetime
 from typing import Any
@@ -117,8 +118,8 @@ class MainWindow(ctk.CTk):
         for column in range(5):
             actions.grid_columnconfigure(column, weight=1)
         self._wallpapers_button = self._make_action_button(actions, "button.wallpapers", self._on_wallpapers_clicked, 0)
-        self._nasa_button = self._make_literal_action_button(actions, "NASA Fotos", self._on_nasa_clicked, 1)
-        self._webb_button = self._make_literal_action_button(actions, "James Webb Fotos", self._on_webb_clicked, 2)
+        self._nasa_button = self._make_action_button(actions, "button.nasa_photos", self._on_nasa_clicked, 1)
+        self._webb_button = self._make_action_button(actions, "button.webb_photos", self._on_webb_clicked, 2)
         self._settings_button = self._make_action_button(actions, "button.settings", self._on_settings_clicked, 3)
         self._about_button = self._make_action_button(actions, "button.about", self._on_about_clicked, 4)
 
@@ -126,9 +127,9 @@ class MainWindow(ctk.CTk):
         space_actions.pack(fill="x", padx=theme.PADDING, pady=(0, 8))
         for column in range(3):
             space_actions.grid_columnconfigure(column, weight=1)
-        self._hubble_button = self._make_literal_action_button(space_actions, "Hubble Fotos", self._on_hubble_clicked, 0)
-        self._mix_button = self._make_literal_action_button(space_actions, "🌌 Космический микс", self._on_space_mix_clicked, 1)
-        self._monitors_button = self._make_literal_action_button(space_actions, "🖥️ Разные обои", self._on_monitors_clicked, 2)
+        self._hubble_button = self._make_action_button(space_actions, "button.hubble_photos", self._on_hubble_clicked, 0)
+        self._mix_button = self._make_action_button(space_actions, "button.space_mix", self._on_space_mix_clicked, 1)
+        self._monitors_button = self._make_action_button(space_actions, "button.per_monitor", self._on_monitors_clicked, 2)
 
         secondary = ctk.CTkFrame(self, fg_color="transparent")
         secondary.pack(fill="x", padx=theme.PADDING, pady=(0, theme.PADDING))
@@ -140,11 +141,6 @@ class MainWindow(ctk.CTk):
 
     def _make_action_button(self, parent: Any, key: str, command: Callable[[], None], column: int) -> Any:
         button = ctk.CTkButton(parent, text=self._tr.get(key), command=command, fg_color=theme.COLOR_SURFACE_ALT, hover_color=theme.COLOR_SURFACE, corner_radius=theme.CORNER_RADIUS)
-        button.grid(row=0, column=column, sticky="ew", padx=3)
-        return button
-
-    def _make_literal_action_button(self, parent: Any, text: str, command: Callable[[], None], column: int) -> Any:
-        button = ctk.CTkButton(parent, text=text, command=command, fg_color=theme.COLOR_SURFACE_ALT, hover_color=theme.COLOR_SURFACE, corner_radius=theme.CORNER_RADIUS)
         button.grid(row=0, column=column, sticky="ew", padx=3)
         return button
 
@@ -236,16 +232,15 @@ class MainWindow(ctk.CTk):
         NASAPhotosDialog(self, self._controller, self._tr, source="hubble")
 
     def _on_space_mix_clicked(self) -> None:
-        self._mix_button.configure(state="disabled", text="🌌 Смешивание…")
+        self._mix_button.configure(state="disabled", text=self._tr.get("button.space_mix_running"))
         def worker() -> None:
             success = self._controller.trigger_space_mix_now()
             self.after(0, lambda: self._space_mix_done(success))
-        import threading
         threading.Thread(target=worker, daemon=True).start()
 
     def _space_mix_done(self, success: bool) -> None:
-        self._mix_button.configure(state="normal", text="🌌 Космический микс")
-        self._message_label.configure(text="Космические обои установлены!" if success else "Не удалось обновить космические обои.")
+        self._mix_button.configure(state="normal", text=self._tr.get("button.space_mix"))
+        self._message_label.configure(text=self._tr.get("space_mix.success" if success else "space_mix.failed"))
 
     def _on_monitors_clicked(self) -> None:
         MonitorsDialog(self, self._controller, self._tr).grab_set()
@@ -263,6 +258,11 @@ class MainWindow(ctk.CTk):
         self._update_button.configure(text=self._tr.get("button.update_now"))
         self._open_folder_button.configure(text=self._tr.get("button.open_folder"))
         self._wallpapers_button.configure(text=self._tr.get("button.wallpapers"))
+        self._nasa_button.configure(text=self._tr.get("button.nasa_photos"))
+        self._webb_button.configure(text=self._tr.get("button.webb_photos"))
+        self._hubble_button.configure(text=self._tr.get("button.hubble_photos"))
+        self._mix_button.configure(text=self._tr.get("button.space_mix"))
+        self._monitors_button.configure(text=self._tr.get("button.per_monitor"))
         self._pause_button.configure(text=self._pause_button_text())
         self._settings_button.configure(text=self._tr.get("button.settings"))
         self._about_button.configure(text=self._tr.get("button.about"))
