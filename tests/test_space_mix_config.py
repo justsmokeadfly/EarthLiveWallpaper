@@ -40,3 +40,23 @@ def test_nonfinite_interval_uses_default(tmp_path: Path) -> None:
     loaded = load_config(paths)
     assert loaded.check_interval_hours == AppConfig().check_interval_hours
     assert loaded.space_mix_interval_hours == AppConfig().space_mix_interval_hours
+
+
+def _read_version_value(path: Path, prefix: str) -> str:
+    for line in path.read_text(encoding="utf-8").splitlines():
+        if line.startswith(prefix):
+            return line.split('"')[1]
+    raise AssertionError(f"Missing {prefix!r} in {path}")
+
+
+def test_app_installer_and_downloader_versions_match() -> None:
+    root = Path(__file__).resolve().parents[1]
+    version = _read_version_value(root / "pyproject.toml", "version = ")
+    about = _read_version_value(root / "ui" / "about_dialog.py", "APP_VERSION = ")
+    installer = _read_version_value(root / "installer" / "EarthLive.iss", "#define MyAppVersion ")
+    downloader = (root / "infrastructure" / "download" / "http_tile_downloader.py").read_text(
+        encoding="utf-8"
+    )
+
+    assert version == about == installer
+    assert f"EarthLiveWallpaper/{version}" in downloader
