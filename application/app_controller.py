@@ -76,7 +76,7 @@ class AppController:
     def start(self) -> None:
         self._scheduler.start(
             check_interval_hours=self._config.check_interval_hours,
-            run_immediately=False,
+            run_immediately=True,
         )
         self._space_mix.configure(
             self._config.space_mix_enabled,
