@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from collections.abc import Iterator
+from contextlib import contextmanager
 from pathlib import Path
 from typing import Any
 
@@ -110,11 +112,15 @@ def test_apod_raises_if_no_image_found_within_lookback(
 def test_download_preserves_existing_file_on_http_error(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ) -> None:
-    real_stream = httpx.stream
-    def fake_stream(*args: Any, **kwargs: Any) -> Any:
-        return real_stream(*args, transport=httpx.MockTransport(
-            lambda request: httpx.Response(500)
-        ))
+    @contextmanager
+    def fake_stream(*args: Any, **kwargs: Any) -> Iterator[httpx.Response]:
+        with (
+            httpx.Client(
+                transport=httpx.MockTransport(lambda request: httpx.Response(500))
+            ) as client,
+            client.stream(*args, **kwargs) as response,
+        ):
+            yield response
     monkeypatch.setattr(httpx, "stream", fake_stream)
     target = tmp_path / "image.jpg"
     target.write_bytes(b"existing wall")
@@ -125,4 +131,34 @@ def test_download_preserves_existing_file_on_http_error(
     with pytest.raises(httpx.HTTPStatusError):
         NASAMediaService().download(photo, target)
     assert target.read_bytes() == b"existing wall"
-    assert list(tmp_path.glob("*.part")) == []
+    assert sorted(tmp_path.iterdir()) == [target]
+
+def test_successful_download_replaces_file_atomically(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    @contextmanager
+    def fake_stream(*args: Any, **kwargs: Any) -> Iterator[httpx.Response]:
+        with (
+            httpx.Client(
+                transport=httpx.MockTransport(
+                    lambda request: httpx.Response(200, content=b"new image", headers={"content-length": "9"})
+                )
+            ) as client,
+            client.stream(*args, **kwargs) as response,
+        ):
+            yield response
+
+    monkeypatch.setattr(httpx, "stream", fake_stream)
+    target = tmp_path / "image.jpg"
+    target.write_bytes(b"previous image")
+    photo = NASAPhoto(
+        title="test", description_en="", image_url="https://apod.nasa.gov/test.jpg",
+        source_url="",
+    )
+    progress: list[tuple[int, int]] = []
+    NASAMediaService().download(
+        photo, target, lambda current, total: progress.append((current, total))
+    )
+    assert target.read_bytes() == b"new image"
+    assert sorted(tmp_path.iterdir()) == [target]
+    assert progress == [(9, 9)]
