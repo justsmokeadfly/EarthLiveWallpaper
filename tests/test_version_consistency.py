@@ -1,7 +1,6 @@
 """Guard consistency of the version shown and shipped in Windows builds."""
 
 import re
-import tomllib
 from pathlib import Path
 
 from ui.about_dialog import APP_VERSION
@@ -11,13 +10,15 @@ ROOT = Path(__file__).resolve().parents[1]
 
 
 def test_version_is_consistent() -> None:
-    pyproject = tomllib.loads((ROOT / "pyproject.toml").read_text(encoding="utf-8"))
+    pyproject = (ROOT / "pyproject.toml").read_text(encoding="utf-8")
     installer = (ROOT / "installer" / "EarthLive.iss").read_text(encoding="utf-8")
     downloader = (ROOT / "infrastructure" / "download" / "http_tile_downloader.py").read_text(
         encoding="utf-8"
     )
-    assert APP_VERSION == pyproject["project"]["version"]
+    project_version = re.search(r'^version = "([^"]+)"', pyproject, re.MULTILINE)
+    assert project_version is not None
+    assert APP_VERSION == project_version.group(1)
     match = re.search(r'#define MyAppVersion "([^"]+)"', installer)
     assert match is not None
-    assert match.group(1) == APP_VERSION
+    assert APP_VERSION == match.group(1)
     assert f"EarthLiveWallpaper/{APP_VERSION}" in downloader
