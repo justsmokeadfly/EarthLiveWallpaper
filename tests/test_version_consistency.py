@@ -1,5 +1,7 @@
 """Guard consistency of the version shown and shipped in Windows builds."""
 
+from __future__ import annotations
+
 import re
 from pathlib import Path
 
@@ -17,8 +19,8 @@ def test_version_is_consistent() -> None:
     )
     project_version = re.search(r'^version = "([^"]+)"', pyproject, re.MULTILINE)
     assert project_version is not None
-    assert APP_VERSION == project_version.group(1)
+    assert project_version.group(1) == APP_VERSION
     match = re.search(r'#define MyAppVersion "([^"]+)"', installer)
     assert match is not None
-    assert APP_VERSION == match.group(1)
+    assert match.group(1) == APP_VERSION
     assert f"EarthLiveWallpaper/{APP_VERSION}" in downloader
