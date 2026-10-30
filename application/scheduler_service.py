@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import threading
 from collections.abc import Callable
-from datetime import UTC, datetime
+from datetime import datetime
 
 import schedule
 
@@ -93,5 +93,5 @@ class SchedulerService:
         next_run = self._scheduler.next_run
         with self._lock:
             self._next_run_at = (
-                next_run.replace(tzinfo=UTC) if next_run is not None and next_run.tzinfo is None else next_run
+                next_run.astimezone() if next_run is not None and next_run.tzinfo is None else next_run
             )
