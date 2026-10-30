@@ -1,179 +1,44 @@
-# 🌍 EarthLive Wallpaper v1.9.2
+# 🌍 EarthLive Wallpaper
 
-> A lightweight Windows desktop application that turns near-real-time Himawari-8/9 satellite imagery into live Earth wallpaper, with NASA, James Webb, Hubble, Cosmic Mix and per-monitor wallpaper controls.
+Windows desktop wallpaper application with live Himawari satellite imagery and NASA APOD photos.
 
-**🇬🇧 English · 🇷🇺 [Русская версия](README_RU.md)**
+[Русская документация](README_RU.md) · [Download installer](https://github.com/justsmokeadfly/EarthLiveWallpaper/releases/latest/download/EarthLive-Setup-Latest.exe)
 
-[![Download Installer](https://img.shields.io/badge/⬇_Download-Installer-2ea44c?style=for-the-badge&logo=windows)](https://github.com/justsmokeadfly/EarthLiveWallpaper/releases/latest/download/EarthLive-Setup-Latest.exe)
+## Current features
 
-[![CI](https://github.com/justsmokeadfly/EarthLiveWallpaper/actions/workflows/ci.yml/badge.svg)](https://github.com/justsmokeadfly/EarthLiveWallpaper/actions/workflows/ci.yml)
-[![Platform](https://img.shields.io/badge/platform-Windows%2010%2F11-0078D4?style=flat-square)](https://github.com/justsmokeadfly/EarthLiveWallpaper)
-[![Python](https://img.shields.io/badge/Python-3.11%2B-3776AB?style=flat-square&logo=python&logoColor=white)](https://www.python.org/)
-[![License](https://img.shields.io/badge/license-MIT-green?style=flat-square)](LICENSE)
+- 🌍 Himawari-8/9 Earth imagery: manual and scheduled wallpaper updates, configurable tile resolution.
+- 🚀 NASA Astronomy Picture of the Day (APOD): today's latest available image (with fallback on video days), search, description translation, previews, local favorites and download.
+- ⏰ Optional automatic NASA APOD wallpaper updates at a configurable interval, with manual update button. APOD is the only source of this mode.
+- 🖥️ Different saved wallpapers per Windows monitor; Fill, Fit, Stretch, Tile, Center and Span modes.
+- 🖼️ Saved wallpaper gallery, history, GIF timelapse, cache management.
+- 🇷🇺🇬🇧 Russian and English UI, autostart, portable and headless operation.
 
-EarthLive Wallpaper downloads the latest available Himawari satellite tiles, validates them, assembles a full-disk Earth image, and applies it as Windows wallpaper.
+**Flickr integration has been removed.** The application does not download Webb or Hubble photos from Flickr. Previously saved images remain in their local folders and are not deleted by this change.
 
-## 🎯 v1.9.2
+## Windows installation
 
-- Fixed the NASA/Webb/Hubble/Cosmic Mix buttons, dialog titles, and status messages staying in Russian regardless of the language setting - they were hardcoded and bypassed the app's translation system entirely.
+Download [EarthLive-Setup-Latest.exe](https://github.com/justsmokeadfly/EarthLiveWallpaper/releases/latest/download/EarthLive-Setup-Latest.exe). No local Python installation is required. Installer default: `C:\Program Files\EarthLive Wallpaper`.
 
-## 🎯 v1.9.1
+For NASA APOD, an optional free personal key from [api.nasa.gov](https://api.nasa.gov/) can be entered in Settings; the shared DEMO_KEY is rate-limited.
 
-- Actually fixed Flickr's larger sizes (Large 1600/2048, X-Large 3K/4K, Original) not showing up in the size picker. Root cause found by inspecting real Flickr page source: dimensions sit inside their own `<small>` tag, not right after the size link as previously assumed - the regex now accounts for that. Verified against a real HTML excerpt supplied by a user.
-
-## 🎯 v1.9.0
-
-- Rewrote the Flickr size picker to scrape Flickr's own public "all sizes" page instead of guessing URLs. Confirmed Flickr can serve different size tiers of the same photo under different secret tokens, which no amount of URL-guessing could reliably find - this reads the same page a browser shows, so it should now correctly surface Large/X-Large/Original when Flickr actually has them. Falls back to the old guessing approach if Flickr's page layout doesn't match what we expect.
-
-## 🛠️ v1.8.9
-
-- v1.8.8's release build failed CI (a mypy type-checking issue introduced by the Flickr fix, unrelated to app behavior) and its installer was never published - this release contains the same fix with that issue corrected. If you're looking for the Flickr size-detection fix, this is the version to install (not v1.8.8).
-
-## 🛠️ Fixed in v1.8.8 (best-effort, please report if still capped)
-
-- The Flickr size-existence check dropped its `Range` header, which may have been rejected by Flickr's on-demand image-generation pipeline on the very first request for a not-yet-generated size, even though a plain GET (what a browser sends) succeeds. This was diagnosed from a user report where Flickr's own "Download" menu offered Large 2048 / X-Large 4096 / Original sizes the app still wasn't finding after v1.8.7. Not independently verified against Flickr's live CDN - please report back if the size picker is still capped lower than what Flickr's own page shows.
-
-## 🛠️ Fixed in v1.8.7
-
-- Fixed the size picker/auto-upgrade under-reporting available Flickr resolutions (e.g. showing only "Large 1024" when much larger sizes actually exist). The existence check now uses a real GET instead of HEAD, since Flickr generates non-default sizes on demand and HEAD only reflects the CDN edge cache. Also now attempts the true "Original" size.
-
-## 🛠️ Fixed in v1.8.6
-
-- Downloading or setting a Webb/Hubble photo as wallpaper now shows a size picker with every resolution Flickr actually has for that photo (matching Flickr's own "View all sizes" page), instead of silently guessing the largest one automatically.
-
-## 🛠️ Fixed in v1.8.5
-
-- Webb/Hubble photos are now downloaded and set as wallpaper at the largest resolution Flickr actually has available, instead of the capped "Medium" size (~500-800px) that Flickr's RSS feed always links by default — usually gets very close to Flickr's "Original" size.
-
-## 🛠️ Fixed in v1.8.4
-
-- Fixed Ctrl+C/V/X/A not working in any text field (Settings, photo search) on non-Latin keyboard layouts (e.g. Russian) — a well-known Tk/Windows bug where these shortcuts are bound to the character produced by a key rather than the physical key itself.
-- Added a "NASA API key" setting (optional, stored locally only) so you can use your own free key from [api.nasa.gov](https://api.nasa.gov/) (1000 requests/hour) instead of the shared `DEMO_KEY` (30/hour).
-- Added clickable links on every photo card in the NASA/Webb/Hubble browsers to open the image itself or its source page in your browser.
-
-## 🛠️ Fixed in v1.8.3
-
-- NASA APOD now fails with a clear explanation when NASA's shared `DEMO_KEY` hits its rate limit (30 requests/hour, shared globally by every app using it) instead of showing a raw HTTP error. Reduced the video-day lookback window so it no longer burns through the shared quota as fast.
-- Photo resolution is now shown for every photo in NASA/Webb/Hubble browsers (read from Flickr's feed metadata for Webb/Hubble, from the downloaded image for APOD — no extra downloads needed).
-- Note: `DEMO_KEY` is inherently rate-limited and shared worldwide. For reliable APOD loading, get a free personal key at [api.nasa.gov](https://api.nasa.gov/) (instant, 1000 requests/hour) and it can be wired into the app.
-
-## 🛠️ Fixed in v1.8.2
-
-- Fixed "Failed to load Flickr webb/hubble feed" — the Webb and Hubble Flickr feed URLs were using the account username as the `nsid` parameter instead of the numeric Flickr user ID that the feed API actually requires.
-- Fixed NASA APOD failing with "did not return an image" on days NASA publishes a video (e.g. launch footage) — it now automatically falls back to the most recent day that has an image.
-
-## 🔒 Security update in v1.8.1
-
-- Bumped `Pillow` from `10.3–10.x` to `12.3+` to pick up fixes for multiple published CVEs (memory-safety and denial-of-service issues affecting untrusted image parsing).
-- Fixed unhandled `comtypes.COMError` in the per-monitor wallpaper code path, which could previously crash instead of failing gracefully.
-
-## ✨ What's new in v1.8.0
-
-### 🚀 NASA Fotos
-- NASA Picture of the Day (APOD).
-- Search by title and description.
-- ⭐ Local favorites.
-- Preview, title and description.
-- RU / EN descriptions, Russian selected by default.
-- Real download progress.
-- Set photos as wallpaper.
-
-### 🔭 James Webb Fotos
-- Fresh images from the official NASA Webb Telescope Flickr album.
-- Official Flickr thumbnails for the gallery, with originals downloaded only on demand.
-- Search and ⭐ Favorites.
-- Photo descriptions from Flickr.
-- RU / EN descriptions with asynchronous translation.
-- Download progress and wallpaper installation.
-
-### 🛰️ Hubble Fotos
-- Hubble photos from the official NASA Hubble Flickr collection.
-- Same preview, search, favorites, translation and wallpaper workflow as NASA/Webb.
-
-### 🌌 Cosmic Mix
-- Optional automatic wallpaper rotation across NASA APOD, James Webb and Hubble.
-- Configurable interval.
-- Random selection from the available space-photo sources.
-- Manual **Cosmic Mix** trigger is also available from the main window.
-
-### 🖥️ Per-monitor wallpapers
-- Assign different saved wallpapers to individual Windows monitors.
-- Uses the native Windows desktop wallpaper COM interface.
-- Configure monitor 1, monitor 2, and additional monitors independently.
-
-### 🛰️ Existing EarthLive features
-- Near-real-time Himawari-8/9 imagery.
-- Automatic and manual Earth updates.
-- Wallpaper history and cache management.
-- Wallpapers gallery.
-- GIF timelapse creation.
-- Dark, light and system themes.
-- English and Russian UI.
-- Windows startup integration.
-- Portable and headless modes.
-
-## ⬇️ Download for Windows
-
-No Python installation is required for packaged releases.
-
-**[⬇️ Download Installer](https://github.com/justsmokeadfly/EarthLiveWallpaper/releases/latest/download/EarthLive-Setup-Latest.exe)** — recommended. Installs to `C:\Program Files\EarthLive Wallpaper`.
-
-Releases are built automatically from semantic version tags such as `v1.8.0`. Each release runs Ruff, security rules, mypy, pytest, PyInstaller and installer verification.
-
-## 🖼️ Wallpaper modes
-
-NASA, James Webb and Hubble photos support:
-
-- **Fill** — fill the screen, cropping when necessary.
-- **Fit** — show the full image without cropping.
-- **Stretch** — stretch to the screen.
-- **Tile** — repeat the image.
-- **Center** — keep the original size and center it.
-- **Span** — span across all monitors.
-
-## 🌐 Photo sources
-
-- **NASA APOD:** NASA Picture of the Day API.
-- **James Webb:** official NASA Webb Telescope Flickr album.
-- **Hubble:** official NASA Hubble Flickr collection.
-
-## 🔎 Gallery tools
-
-NASA, Webb and Hubble galleries include search, local favorites, lightweight previews, bilingual descriptions and wallpaper actions.
-
-## 🏗️ Architecture
-
-```text
-EarthLiveWallpaper/
-├── domain/             # Core entities and interfaces
-├── application/        # Use cases, scheduling and Cosmic Mix
-├── infrastructure/    # Providers, NASA/Webb/Hubble, downloads, storage and Win32
-├── ui/                 # CustomTkinter UI and system tray
-├── app.py              # Dependency wiring
-├── main.py             # Entry point
-└── tests/              # Automated tests
-```
-
-## 🧪 Development checks
+## Development
 
 ```powershell
-pip install -r requirements-dev.txt
+python -m pip install -r requirements-dev.txt
 python -m ruff check .
+python -m ruff check . --select S
 python -m mypy --ignore-missing-imports --follow-imports=skip .
 python -m pytest -q
 ```
 
-## ℹ️ Release note
+The Windows release workflow also builds the PyInstaller portable app and Inno Setup installer. It checks code without automatically modifying sources. Published Windows executables are currently unsigned.
 
-Windows binaries are currently unsigned. SmartScreen may therefore show an “unknown publisher” warning for the installer.
+## Project
 
-## 👤 Author
+- `domain/` — entities and interfaces
+- `application/` — update and scheduling services
+- `infrastructure/` — Himawari provider, NASA APOD, persistence, wallpaper API
+- `ui/` — CustomTkinter window, dialogs and tray
+- `tests/` — automated checks
 
-**justsmokeadfly**
-
-- GitHub: https://github.com/justsmokeadfly
-- Project: https://github.com/justsmokeadfly/EarthLiveWallpaper
-
----
-
-<p align="center">Made for anyone who wants a living view of Earth and space on their desktop 🌍✨</p>
+Author: [justsmokeadfly](https://github.com/justsmokeadfly) · MIT License

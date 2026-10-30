@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import math
 import os
 import sys
 from contextlib import suppress
@@ -99,7 +100,7 @@ def _safe_number(raw: dict[str, Any], key: str, fallback: float, minimum: float)
     except (TypeError, ValueError):
         _logger.warning("Invalid %s in config; using default.", key)
         return fallback
-    if value < minimum:
+    if not math.isfinite(value) or value < minimum:
         _logger.warning("Invalid %s=%s in config; using default.", key, value)
         return fallback
     return value

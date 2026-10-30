@@ -115,21 +115,19 @@ class MainWindow(ctk.CTk):
 
         actions = ctk.CTkFrame(self, fg_color="transparent")
         actions.pack(fill="x", padx=theme.PADDING, pady=(0, 8))
-        for column in range(5):
+        for column in range(4):
             actions.grid_columnconfigure(column, weight=1)
         self._wallpapers_button = self._make_action_button(actions, "button.wallpapers", self._on_wallpapers_clicked, 0)
         self._nasa_button = self._make_action_button(actions, "button.nasa_photos", self._on_nasa_clicked, 1)
-        self._webb_button = self._make_action_button(actions, "button.webb_photos", self._on_webb_clicked, 2)
-        self._settings_button = self._make_action_button(actions, "button.settings", self._on_settings_clicked, 3)
-        self._about_button = self._make_action_button(actions, "button.about", self._on_about_clicked, 4)
+        self._settings_button = self._make_action_button(actions, "button.settings", self._on_settings_clicked, 2)
+        self._about_button = self._make_action_button(actions, "button.about", self._on_about_clicked, 3)
 
         space_actions = ctk.CTkFrame(self, fg_color="transparent")
         space_actions.pack(fill="x", padx=theme.PADDING, pady=(0, 8))
-        for column in range(3):
+        for column in range(2):
             space_actions.grid_columnconfigure(column, weight=1)
-        self._hubble_button = self._make_action_button(space_actions, "button.hubble_photos", self._on_hubble_clicked, 0)
-        self._mix_button = self._make_action_button(space_actions, "button.space_mix", self._on_space_mix_clicked, 1)
-        self._monitors_button = self._make_action_button(space_actions, "button.per_monitor", self._on_monitors_clicked, 2)
+        self._mix_button = self._make_action_button(space_actions, "button.space_mix", self._on_space_mix_clicked, 0)
+        self._monitors_button = self._make_action_button(space_actions, "button.per_monitor", self._on_monitors_clicked, 1)
 
         secondary = ctk.CTkFrame(self, fg_color="transparent")
         secondary.pack(fill="x", padx=theme.PADDING, pady=(0, theme.PADDING))
@@ -223,13 +221,8 @@ class MainWindow(ctk.CTk):
         WallpapersDialog(self, self._controller, self._tr).grab_set()
 
     def _on_nasa_clicked(self) -> None:
-        NASAPhotosDialog(self, self._controller, self._tr, source="nasa")
+        NASAPhotosDialog(self, self._controller, self._tr)
 
-    def _on_webb_clicked(self) -> None:
-        NASAPhotosDialog(self, self._controller, self._tr, source="webb")
-
-    def _on_hubble_clicked(self) -> None:
-        NASAPhotosDialog(self, self._controller, self._tr, source="hubble")
 
     def _on_space_mix_clicked(self) -> None:
         self._mix_button.configure(state="disabled", text=self._tr.get("button.space_mix_running"))
@@ -259,8 +252,6 @@ class MainWindow(ctk.CTk):
         self._open_folder_button.configure(text=self._tr.get("button.open_folder"))
         self._wallpapers_button.configure(text=self._tr.get("button.wallpapers"))
         self._nasa_button.configure(text=self._tr.get("button.nasa_photos"))
-        self._webb_button.configure(text=self._tr.get("button.webb_photos"))
-        self._hubble_button.configure(text=self._tr.get("button.hubble_photos"))
         self._mix_button.configure(text=self._tr.get("button.space_mix"))
         self._monitors_button.configure(text=self._tr.get("button.per_monitor"))
         self._pause_button.configure(text=self._pause_button_text())

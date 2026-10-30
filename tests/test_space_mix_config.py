@@ -30,3 +30,13 @@ def test_invalid_space_mix_interval_uses_default(tmp_path: Path) -> None:
 
     assert loaded.space_mix_enabled is True
     assert loaded.space_mix_interval_hours == AppConfig().space_mix_interval_hours
+
+def test_nonfinite_interval_uses_default(tmp_path: Path) -> None:
+    paths = ConfigPaths(override_config_path=tmp_path / "config.json")
+    paths.config_file.write_text(
+        '{"check_interval_hours": "nan", "space_mix_interval_hours": "Infinity"}',
+        encoding="utf-8",
+    )
+    loaded = load_config(paths)
+    assert loaded.check_interval_hours == AppConfig().check_interval_hours
+    assert loaded.space_mix_interval_hours == AppConfig().space_mix_interval_hours

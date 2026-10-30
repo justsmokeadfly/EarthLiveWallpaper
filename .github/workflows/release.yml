@@ -48,7 +48,7 @@ jobs:
 
       - name: Ruff — full repository
         run: |
-          python -m ruff check . --fix --output-format=concise
+          python -m ruff check . --output-format=concise
           python -m ruff check . --output-format=concise
 
       - name: Ruff — security rules
@@ -123,44 +123,20 @@ jobs:
           name: EarthLive Wallpaper ${{ env.RELEASE_TAG }}
           body: |
             ## 🌍 EarthLive Wallpaper ${{ env.RELEASE_TAG }}
-
-            ### ✨ What's new
-            - Added **NASA Fotos** with NASA Picture of the Day (APOD).
-            - Added **James Webb Fotos** from the official NASA Webb Flickr album.
-            - Added **Hubble Fotos** from the official NASA Hubble Flickr collection.
-            - Added search by title and description for NASA/Webb/Hubble galleries.
-            - Added local **⭐ Favorites** for space photos.
-            - Added official Flickr thumbnails so galleries do not download original images just to display previews.
-            - Added RU / EN photo descriptions with Russian selected by default.
-            - Added asynchronous translation and translation caching.
-            - Added real download progress for space photos.
-            - Added **Set as wallpaper** with Fill, Fit, Stretch, Tile, Center and Span modes.
-            - Added optional automatic **🌌 Cosmic Mix** across NASA APOD, James Webb and Hubble.
-            - Added manual Cosmic Mix trigger from the main window.
-            - Added **🖥️ per-monitor wallpapers** for Windows, allowing a different saved image on each monitor.
-            - Kept the existing Himawari satellite wallpaper workflow unchanged.
-
-            ### 🪐 Sources
-            - NASA Picture of the Day (APOD)
-            - Official NASA Webb Telescope Flickr album
-            - Official NASA Hubble Flickr collection
+            - Himawari Earth wallpapers with automatic updates.
+            - NASA Astronomy Picture of the Day (APOD) gallery and optional scheduled wallpaper.
+            - Favorites, local downloads, history, and GIF timelapse.
+            - Wallpaper modes and per-monitor wallpaper support.
+            - Russian and English interface.
 
             ### Windows downloads
-            - `EarthLive-Setup-${{ env.RELEASE_VERSION }}.exe` — Windows Installer (versioned)
-            - `EarthLive-Setup-Latest.exe` — Windows Installer (stable download link)
+            - `EarthLive-Setup-${{ env.RELEASE_VERSION }}.exe` — Windows Installer
+            - `EarthLive-Setup-Latest.exe` — Installer stable filename
             - `EarthLive-${{ env.RELEASE_VERSION }}-windows-x64-portable.zip` — Portable version
-            - `EarthLive.exe` — standalone executable
 
-            ### Release validation
-            - Ruff lint — full repository
-            - Ruff security rules
-            - mypy type-check — full repository
-            - pytest
-            - PyInstaller build verification
-            - Portable ZIP verification
-            - Inno Setup installer verification
-
-            > Note: Windows binaries are currently unsigned. Code signing is intentionally not included in this release.
+            ### Validation
+            Ruff, mypy, pytest, PyInstaller and Inno Setup checks run before publishing.
+            Windows binaries are currently unsigned.
           files: |
             dist/EarthLive/EarthLive.exe
             EarthLive-${{ env.RELEASE_VERSION }}-windows-x64-portable.zip
