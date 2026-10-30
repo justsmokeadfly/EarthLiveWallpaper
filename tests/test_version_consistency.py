@@ -1,8 +1,8 @@
 """Guard consistency of the version shown and shipped in Windows builds."""
 
-from pathlib import Path
 import re
 import tomllib
+from pathlib import Path
 
 from ui.about_dialog import APP_VERSION
 
@@ -17,5 +17,7 @@ def test_version_is_consistent() -> None:
         encoding="utf-8"
     )
     assert APP_VERSION == pyproject["project"]["version"]
-    assert re.search(r'#define MyAppVersion "([^"]+)"', installer).group(1) == APP_VERSION
+    match = re.search(r'#define MyAppVersion "([^"]+)"', installer)
+    assert match is not None
+    assert match.group(1) == APP_VERSION
     assert f"EarthLiveWallpaper/{APP_VERSION}" in downloader
