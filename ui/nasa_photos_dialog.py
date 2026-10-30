@@ -4,9 +4,9 @@ from __future__ import annotations
 import threading
 import webbrowser
 from collections.abc import Callable
-from uuid import uuid4
 from pathlib import Path
 from typing import Any
+from uuid import uuid4
 
 import customtkinter as ctk
 from PIL import Image
