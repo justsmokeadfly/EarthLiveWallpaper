@@ -68,7 +68,7 @@ class HttpTileDownloader(TileDownloader):
             len(to_download), total, self._max_workers,
         )
 
-        headers = {"User-Agent": "EarthLiveWallpaper/1.3.0 (+https://github.com/justsmokeadfly/EarthLiveWallpaper)"}
+        headers = {"User-Agent": "EarthLiveWallpaper/1.9.3 (+https://github.com/justsmokeadfly/EarthLiveWallpaper)"}
         with (
             httpx.Client(timeout=_HTTP_TIMEOUT_SECONDS, headers=headers, follow_redirects=True) as client,
             ThreadPoolExecutor(max_workers=self._max_workers) as executor,
