@@ -22,21 +22,14 @@ from ui.i18n import Translator
 _logger = get_logger(__name__)
 
 _THUMB = (360, 210)
-_MODES = {
-    "Заполнить (Fill)": WallpaperMode.FILL,
-    "Вписать (Fit)": WallpaperMode.FIT,
-    "Растянуть (Stretch)": WallpaperMode.STRETCH,
-    "Замостить (Tile)": WallpaperMode.TILE,
-    "По центру (Center)": WallpaperMode.CENTER,
-    "На все мониторы (Span)": WallpaperMode.SPAN,
-}
-
-
 class NASAPhotosDialog(ctk.CTkToplevel):
     def __init__(self, master: ctk.CTk, controller: AppController, translator: Translator) -> None:
         super().__init__(master)
         self._controller = controller
         self._tr = translator
+        self._modes_by_label = {
+            self._tr.get(f"wallpaper_mode.{mode.value}"): mode for mode in WallpaperMode
+        }
         self._photos: list[NASAPhoto] = []
         self._refs: list[ctk.CTkImage] = []
         self._descriptions: dict[str, str] = {}
@@ -182,8 +175,8 @@ class NASAPhotosDialog(ctk.CTkToplevel):
         self._add_actions(info, photo)
 
     def _add_actions(self, parent: ctk.CTkFrame, photo: NASAPhoto) -> None:
-        mode = ctk.CTkComboBox(parent, values=list(_MODES))
-        mode.set("Заполнить (Fill)")
+        mode = ctk.CTkComboBox(parent, values=list(self._modes_by_label))
+        mode.set(self._tr.get("wallpaper_mode.fill"))
         mode.pack(fill="x", pady=(8, 5))
         actions = ctk.CTkFrame(parent, fg_color="transparent")
         actions.pack(fill="x")
@@ -265,7 +258,7 @@ class NASAPhotosDialog(ctk.CTkToplevel):
         )
 
     def _install(self, photo: NASAPhoto, selected_mode: str) -> None:
-        mode = _MODES.get(selected_mode, WallpaperMode.FILL)
+        mode = self._modes_by_label.get(selected_mode, WallpaperMode.FILL)
         path = self._unique_path(photo)
 
         def completed() -> None:
