@@ -17,7 +17,7 @@ from domain.entities import AppConfig
 from domain.enums import UpdateOutcome, WallpaperMode
 from domain.interfaces import StateRepository, TimelapseGenerator
 from infrastructure.nasa.favorites_repository import FavoritesRepository
-from infrastructure.nasa.nasa_media_service import FlickrSize, NASAMediaService, NASAPhoto
+from infrastructure.nasa.nasa_media_service import NASAMediaService, NASAPhoto
 from infrastructure.persistence.filesystem_cache_manager import FilesystemCacheManager
 from infrastructure.system.autostart import AutostartManager
 from infrastructure.wallpaper.multi_monitor_wallpaper_setter import (
@@ -76,7 +76,7 @@ class AppController:
     def start(self) -> None:
         self._scheduler.start(
             check_interval_hours=self._config.check_interval_hours,
-            run_immediately=False,
+            run_immediately=True,
         )
         self._space_mix.configure(
             self._config.space_mix_enabled,
@@ -185,14 +185,6 @@ class AppController:
     def get_nasa_apod(self) -> NASAPhoto:
         return self._nasa_media.get_apod()
 
-    def get_webb_photos(self, limit: int = 24) -> list[NASAPhoto]:
-        return self._nasa_media.get_webb_photos(limit)
-
-    def get_hubble_photos(self, limit: int = 24) -> list[NASAPhoto]:
-        return self._nasa_media.get_hubble_photos(limit)
-
-    def list_flickr_sizes(self, photo: NASAPhoto) -> list[FlickrSize]:
-        return self._nasa_media.list_flickr_sizes(photo)
 
     def download_nasa_photo(
         self,

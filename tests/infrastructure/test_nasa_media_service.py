@@ -1,83 +1,16 @@
-"""Tests for NASA, Webb, and Hubble photo sources."""
+"""NASA APOD retrieval, video fallback and download tests."""
 
 from __future__ import annotations
 
+from collections.abc import Iterator
+from contextlib import contextmanager
+from pathlib import Path
 from typing import Any
 
 import httpx
 import pytest
 
 from infrastructure.nasa.nasa_media_service import NASAMediaService, NASAPhoto
-
-_FLICKR_XML = b"""
-<rss xmlns:media="http://search.yahoo.com/mrss/">
-  <channel>
-    <item>
-      <title>Test Space Image</title>
-      <description>&lt;p&gt;A beautiful galaxy.&lt;/p&gt;</description>
-      <link>https://www.flickr.com/photos/example/1/</link>
-      <media:content url="https://live.staticflickr.com/original.jpg" />
-      <media:thumbnail url="https://live.staticflickr.com/thumb.jpg" />
-    </item>
-  </channel>
-</rss>
-"""
-
-
-def _mock_client(monkeypatch: pytest.MonkeyPatch) -> None:
-    real_client = httpx.Client
-
-    def handler(request: httpx.Request) -> httpx.Response:
-        return httpx.Response(200, content=_FLICKR_XML)
-
-    def make_client(*args: Any, **kwargs: Any) -> httpx.Client:
-        return real_client(transport=httpx.MockTransport(handler))
-
-    monkeypatch.setattr(httpx, "Client", make_client)
-
-
-def test_webb_uses_flickr_thumbnail_and_source(monkeypatch: pytest.MonkeyPatch) -> None:
-    _mock_client(monkeypatch)
-    service = NASAMediaService()
-    photos = service.get_webb_photos(limit=1)
-
-    assert len(photos) == 1
-    assert photos[0].source == "webb"
-    assert photos[0].image_url.endswith("original.jpg")
-    assert photos[0].thumbnail_url.endswith("thumb.jpg")
-    assert photos[0].source_url.endswith("/1/")
-    assert photos[0].width == 0
-    assert photos[0].height == 0
-
-
-def test_flickr_feed_parses_width_and_height(monkeypatch: pytest.MonkeyPatch) -> None:
-    xml_with_dims = b"""
-<rss xmlns:media="http://search.yahoo.com/mrss/">
-  <channel>
-    <item>
-      <title>Test Space Image</title>
-      <description>A beautiful galaxy.</description>
-      <link>https://www.flickr.com/photos/example/1/</link>
-      <media:content url="https://live.staticflickr.com/original.jpg" width="4096" height="2731" />
-      <media:thumbnail url="https://live.staticflickr.com/thumb.jpg" />
-    </item>
-  </channel>
-</rss>
-"""
-    real_client = httpx.Client
-
-    def handler(request: httpx.Request) -> httpx.Response:
-        return httpx.Response(200, content=xml_with_dims)
-
-    def make_client(*args: Any, **kwargs: Any) -> httpx.Client:
-        return real_client(transport=httpx.MockTransport(handler))
-
-    monkeypatch.setattr(httpx, "Client", make_client)
-    service = NASAMediaService()
-    photos = service.get_webb_photos(limit=1)
-
-    assert photos[0].width == 4096
-    assert photos[0].height == 2731
 
 
 def test_apod_rate_limit_gives_clear_error(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -94,304 +27,6 @@ def test_apod_rate_limit_gives_clear_error(monkeypatch: pytest.MonkeyPatch) -> N
 
     with pytest.raises(RuntimeError, match="rate limit"):
         service.get_apod()
-
-
-def test_flickr_photo_upgraded_to_largest_available_size(
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    xml_realistic_url = b"""
-<rss xmlns:media="http://search.yahoo.com/mrss/">
-  <channel>
-    <item>
-      <title>Test Space Image</title>
-      <description>A beautiful galaxy.</description>
-      <link>https://www.flickr.com/photos/example/1/</link>
-      <media:content url="https://live.staticflickr.com/65535/123456789_abc123def0.jpg" width="800" height="600" />
-      <media:thumbnail url="https://live.staticflickr.com/65535/123456789_abc123def0_m.jpg" />
-    </item>
-  </channel>
-</rss>
-"""
-    real_client = httpx.Client
-
-    def handler(request: httpx.Request) -> httpx.Response:
-        if "flickr.com/services/feeds" in str(request.url):
-            return httpx.Response(200, content=xml_realistic_url)
-        # Simulate only the "4k" derived size existing for this photo.
-        if request.url.path.endswith("_4k.jpg"):
-            return httpx.Response(200)
-        return httpx.Response(404)
-
-    def make_client(*args: Any, **kwargs: Any) -> httpx.Client:
-        return real_client(transport=httpx.MockTransport(handler))
-
-    monkeypatch.setattr(httpx, "Client", make_client)
-    service = NASAMediaService()
-    photos = service.get_webb_photos(limit=1)
-
-    assert photos[0].image_url.endswith("_4k.jpg")
-    assert photos[0].width == 4096
-    assert photos[0].height == 3072
-    # The small preview thumbnail is left untouched for fast loading.
-    assert photos[0].thumbnail_url.endswith("_m.jpg")
-
-
-def test_flickr_photo_keeps_medium_url_when_no_larger_size_exists(
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    xml_realistic_url = b"""
-<rss xmlns:media="http://search.yahoo.com/mrss/">
-  <channel>
-    <item>
-      <title>Test Space Image</title>
-      <description>A beautiful galaxy.</description>
-      <link>https://www.flickr.com/photos/example/1/</link>
-      <media:content url="https://live.staticflickr.com/65535/123456789_abc123def0.jpg" width="800" height="600" />
-    </item>
-  </channel>
-</rss>
-"""
-    real_client = httpx.Client
-
-    def handler(request: httpx.Request) -> httpx.Response:
-        if "flickr.com/services/feeds" in str(request.url):
-            return httpx.Response(200, content=xml_realistic_url)
-        return httpx.Response(404)
-
-    def make_client(*args: Any, **kwargs: Any) -> httpx.Client:
-        return real_client(transport=httpx.MockTransport(handler))
-
-    monkeypatch.setattr(httpx, "Client", make_client)
-    service = NASAMediaService()
-    photos = service.get_webb_photos(limit=1)
-
-    assert photos[0].image_url.endswith("123456789_abc123def0.jpg")
-    assert photos[0].width == 800
-    assert photos[0].height == 600
-
-
-def test_hubble_uses_same_flickr_parser(monkeypatch: pytest.MonkeyPatch) -> None:
-    _mock_client(monkeypatch)
-    service = NASAMediaService()
-    photos = service.get_hubble_photos(limit=1)
-
-    assert len(photos) == 1
-    assert photos[0].source == "hubble"
-    assert photos[0].thumbnail_url.endswith("thumb.jpg")
-
-
-def test_list_flickr_sizes_scrapes_all_sizes_page(
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    # Mirrors what real Flickr pages look like: different size tiers can
-    # use different secrets for the same photo, so "Large 2048" (shown by
-    # default on the listing page) and "X-Large 4K" (needing its own page
-    # fetch) deliberately use different secrets here.
-    listing_html = """
-    <a href="/photos/example/1/sizes/k/">Large 2048</a>
-    <small>(2031 &times; 2048)</small>
-    <a href="/photos/example/1/sizes/4k/">X-Large 4K</a>
-    <small>(4061 &times; 4096)</small>
-    <a href="https://www.flickr.com/photo_download.gne?size=k&id=1&secret=aaaa111111">
-        Download the Large 2048 size
-    </a>
-    <img src="https://live.staticflickr.com/65535/1_aaaa111111_k.jpg">
-    """
-    size_4k_html = '<img src="https://live.staticflickr.com/65535/1_bbbb222222_4k.jpg">'
-    real_client = httpx.Client
-
-    def handler(request: httpx.Request) -> httpx.Response:
-        if request.url.path.endswith("/sizes/"):
-            return httpx.Response(200, text=listing_html)
-        if request.url.path.endswith("/sizes/4k/"):
-            return httpx.Response(200, text=size_4k_html)
-        return httpx.Response(404)
-
-    def make_client(*args: Any, **kwargs: Any) -> httpx.Client:
-        return real_client(transport=httpx.MockTransport(handler))
-
-    monkeypatch.setattr(httpx, "Client", make_client)
-    service = NASAMediaService()
-    photo = NASAPhoto(
-        title="Test",
-        description_en="",
-        image_url="https://live.staticflickr.com/65535/1_aaaa111111_k.jpg",
-        source_url="https://www.flickr.com/photos/example/1/",
-        source="webb",
-        width=2031,
-        height=2048,
-    )
-
-    sizes = service.list_flickr_sizes(photo)
-
-    assert len(sizes) == 2
-    # Largest (X-Large 4K) first.
-    assert "4K" in sizes[0].label
-    assert sizes[0].url.endswith("_bbbb222222_4k.jpg")
-    assert sizes[0].width == 4061
-    assert "2048" in sizes[1].label
-    assert sizes[1].url.endswith("_aaaa111111_k.jpg")
-
-
-def test_list_flickr_sizes_falls_back_to_guessing_on_unparseable_page(
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    real_client = httpx.Client
-
-    def handler(request: httpx.Request) -> httpx.Response:
-        if request.url.path.endswith("/sizes/"):
-            # Markup Flickr changed / doesn't match our scraping pattern.
-            return httpx.Response(200, text="<html><body>no size list here</body></html>")
-        if request.url.path.endswith("_k.jpg"):
-            return httpx.Response(200)
-        return httpx.Response(404)
-
-    def make_client(*args: Any, **kwargs: Any) -> httpx.Client:
-        return real_client(transport=httpx.MockTransport(handler))
-
-    monkeypatch.setattr(httpx, "Client", make_client)
-    service = NASAMediaService()
-    photo = NASAPhoto(
-        title="Test",
-        description_en="",
-        image_url="https://live.staticflickr.com/65535/1_aaaa111111.jpg",
-        source_url="https://www.flickr.com/photos/example/1/",
-        source="webb",
-        width=793,
-        height=800,
-    )
-
-    sizes = service.list_flickr_sizes(photo)
-
-    # Fell back to guessing: "k" suffix exists in the mock, medium is
-    # always included too.
-    assert len(sizes) == 2
-    assert any(s.url.endswith("_k.jpg") for s in sizes)
-    assert any(s.label.startswith("Medium") for s in sizes)
-
-
-def test_list_flickr_sizes_parses_real_flickr_html_excerpt(
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    # A real excerpt from Flickr's actual "all sizes" page HTML (captured
-    # directly from production), including the exact whitespace/tag
-    # nesting Flickr uses - this is what caught the original bug: the
-    # dimensions sit inside a separate <small> tag, not right after </a>.
-    real_excerpt = """
-<div id="all-sizes-header">
-	<dl>
-		<dt>Download</dt>
-		<dd>
-			<a href="https://www.flickr.com/photo_download.gne?size=l&id=55491800186&secret=abd6c3a708">
-					Download the Large 1024 size of this photo
-				</a>
-		</dd>
-	</dl>
-	<dl>
-		<dt>Sizes</dt>
-		<dd>
-				<a href="/photos/nasawebbtelescope/55491800186/sizes/o/">Original</a>
-				<small>(4298 &times; 4335)</small>
-			<br>
-			<ol class="sizes-list">
-					<li>
-					<ol>
-																<li>
-												<a href="/photos/nasawebbtelescope/55491800186/sizes/sq/">Square 75</a>
-												<small>(75 &times; 75)</small>
-						</li>
-					</ol>
-				</li>
-						<li>
-					<ol>
-																<li>
-												Large 1024
-												<small>(1015 &times; 1024)</small>
-						</li>
-																<li>
-												<a href="/photos/nasawebbtelescope/55491800186/sizes/h/">Large 1600</a>
-												<small>(1586 &times; 1600)</small>
-						</li>
-																<li>
-												<a href="/photos/nasawebbtelescope/55491800186/sizes/k/">Large 2048</a>
-												<small>(2031 &times; 2048)</small>
-						</li>
-					</ol>
-				</li>
-						<li>
-					<ol>
-																<li>
-												<a href="/photos/nasawebbtelescope/55491800186/sizes/4k/">X-Large 4K</a>
-												<small>(4061 &times; 4096)</small>
-						</li>
-					</ol>
-				</li>
-			</ol>
-		</dd>
-	</dl>
-</div>
-<div id="allsizes-photo">
-		<img src="https://live.staticflickr.com/65535/55491800186_abd6c3a708_b.jpg">
-</div>
-"""
-    real_client = httpx.Client
-
-    def handler(request: httpx.Request) -> httpx.Response:
-        if request.url.path.endswith("/sizes/"):
-            return httpx.Response(200, text=real_excerpt)
-        return httpx.Response(404)
-
-    def make_client(*args: Any, **kwargs: Any) -> httpx.Client:
-        return real_client(transport=httpx.MockTransport(handler))
-
-    monkeypatch.setattr(httpx, "Client", make_client)
-    service = NASAMediaService()
-    photo = NASAPhoto(
-        title="Test",
-        description_en="",
-        image_url="https://live.staticflickr.com/65535/55491800186_abd6c3a708_b.jpg",
-        source_url="https://www.flickr.com/photos/nasawebbtelescope/55491800186/",
-        source="webb",
-        width=1015,
-        height=1024,
-    )
-
-    sizes = service.list_flickr_sizes(photo)
-    labels = [s.label for s in sizes]
-
-    # All linked sizes found, largest first. "Large 1024" is deliberately
-    # absent from links (Flickr renders the currently-shown default size
-    # as plain text with no href) - covered separately by the download
-    # link/img src extraction, not this list.
-    assert any("X-Large 4K" in label for label in labels)
-    assert any("Large 2048" in label for label in labels)
-    assert any("Large 1600" in label for label in labels)
-    assert any("Original" in label for label in labels)
-    assert any("Square 75" in label for label in labels)
-    assert "X-Large 4K" in sizes[0].label
-    original = next(s for s in sizes if "Original" in s.label)
-    assert original.width == 4298
-    assert original.height == 4335
-
-
-def test_list_flickr_sizes_falls_back_for_non_flickr_url(
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    service = NASAMediaService()
-    photo = NASAPhoto(
-        title="Test",
-        description_en="",
-        image_url="https://apod.nasa.gov/apod/some_image.jpg",
-        source_url="https://apod.nasa.gov/apod/ap260831.html",
-        source="nasa",
-        width=1920,
-        height=1080,
-    )
-
-    sizes = service.list_flickr_sizes(photo)
-
-    assert len(sizes) == 1
-    assert sizes[0].url == photo.image_url
 
 
 def test_apod_returns_todays_image(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -473,3 +108,57 @@ def test_apod_raises_if_no_image_found_within_lookback(
 
     with pytest.raises(RuntimeError, match="did not return an image"):
         service.get_apod()
+
+def test_download_preserves_existing_file_on_http_error(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    @contextmanager
+    def fake_stream(*args: Any, **kwargs: Any) -> Iterator[httpx.Response]:
+        with (
+            httpx.Client(
+                transport=httpx.MockTransport(lambda request: httpx.Response(500))
+            ) as client,
+            client.stream(*args, **kwargs) as response,
+        ):
+            yield response
+    monkeypatch.setattr(httpx, "stream", fake_stream)
+    target = tmp_path / "image.jpg"
+    target.write_bytes(b"existing wall")
+    photo = NASAPhoto(
+        title="test", description_en="", image_url="https://apod.nasa.gov/test.jpg",
+        source_url="",
+    )
+    with pytest.raises(httpx.HTTPStatusError):
+        NASAMediaService().download(photo, target)
+    assert target.read_bytes() == b"existing wall"
+    assert sorted(tmp_path.iterdir()) == [target]
+
+def test_successful_download_replaces_file_atomically(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    @contextmanager
+    def fake_stream(*args: Any, **kwargs: Any) -> Iterator[httpx.Response]:
+        with (
+            httpx.Client(
+                transport=httpx.MockTransport(
+                    lambda request: httpx.Response(200, content=b"new image", headers={"content-length": "9"})
+                )
+            ) as client,
+            client.stream(*args, **kwargs) as response,
+        ):
+            yield response
+
+    monkeypatch.setattr(httpx, "stream", fake_stream)
+    target = tmp_path / "image.jpg"
+    target.write_bytes(b"previous image")
+    photo = NASAPhoto(
+        title="test", description_en="", image_url="https://apod.nasa.gov/test.jpg",
+        source_url="",
+    )
+    progress: list[tuple[int, int]] = []
+    NASAMediaService().download(
+        photo, target, lambda current, total: progress.append((current, total))
+    )
+    assert target.read_bytes() == b"new image"
+    assert sorted(tmp_path.iterdir()) == [target]
+    assert progress == [(9, 9)]

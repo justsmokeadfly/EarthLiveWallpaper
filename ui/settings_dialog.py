@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import math
 from collections.abc import Callable
 from dataclasses import replace
 
@@ -103,11 +104,16 @@ class SettingsDialog(ctk.CTkToplevel):
             retry_count = int(self._retry_count_var.get())
             retry_delay_seconds = float(self._retry_delay_var.get())
             space_mix_interval_hours = float(self._space_mix_interval_var.get())
-            if check_interval_hours <= 0 or space_mix_interval_hours <= 0:
+            if (
+                not math.isfinite(check_interval_hours)
+                or not math.isfinite(space_mix_interval_hours)
+                or check_interval_hours <= 0
+                or space_mix_interval_hours <= 0
+            ):
                 raise ValueError("Intervals must be greater than zero.")
             if history_size < 1:
                 raise ValueError("History size must be at least 1.")
-            if retry_count < 0 or retry_delay_seconds < 0:
+            if retry_count < 0 or retry_delay_seconds < 0 or not math.isfinite(retry_delay_seconds):
                 raise ValueError("Retry values cannot be negative.")
         except (KeyError, ValueError) as exc:
             self._error_label.configure(text=self._tr.get("settings.invalid_value", error=str(exc)))

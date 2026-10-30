@@ -11,7 +11,7 @@ from ui import theme
 from ui.i18n import Translator
 
 _logger = get_logger(__name__)
-APP_VERSION = "1.9.2"
+APP_VERSION = "1.9.3"
 APP_AUTHOR = "@justsmokeadfly"
 SOURCE_URL = "https://github.com/justsmokeadfly/EarthLiveWallpaper"
 AUTHOR_URL = "https://github.com/justsmokeadfly"
@@ -44,7 +44,7 @@ class AboutDialog(ctk.CTkToplevel):
         self._add_link_row(info, self._tr.get("about.author"), f"{APP_AUTHOR} ↗", AUTHOR_URL)
         self._add_info_row(info, self._tr.get("about.license"), "MIT")
         self._add_link_row(info, self._tr.get("about.source"), self._tr.get("about.open_github"), SOURCE_URL)
-        ctk.CTkLabel(self, text="NASA • James Webb • Hubble • Himawari • Multi-monitor", text_color=theme.COLOR_TEXT_SECONDARY).pack(pady=(0, 12))
+        ctk.CTkLabel(self, text="NASA APOD • Himawari • Multi-monitor", text_color=theme.COLOR_TEXT_SECONDARY).pack(pady=(0, 12))
         ctk.CTkButton(self, text=self._tr.get("about.close"), command=self.destroy, fg_color=theme.COLOR_ACCENT, hover_color=theme.COLOR_ACCENT_HOVER, corner_radius=theme.CORNER_RADIUS, height=38).pack(fill="x", padx=18, pady=(0, 18))
 
     def _add_info_row(self, parent: ctk.CTkBaseClass, label: str, value: str) -> None:
