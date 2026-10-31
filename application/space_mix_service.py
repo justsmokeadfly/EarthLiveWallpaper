@@ -15,7 +15,7 @@ _logger = get_logger(__name__)
 
 
 class SpaceMixService:
-    """Background scheduler for a daily/random cosmic wallpaper mix."""
+    """Background scheduler for NASA APOD wallpaper updates."""
 
     def __init__(self, media: NASAMediaService, wallpapers_dir: Path) -> None:
         self._media = media
@@ -53,7 +53,7 @@ class SpaceMixService:
             self._media.download(photo, path)
             return self._setter.apply(path, WallpaperMode.FIT)
         except Exception:
-            _logger.exception("Cosmic Mix update failed.")
+            _logger.exception("NASA APOD wallpaper update failed.")
             return False
 
     def _run(self, stop_event: threading.Event) -> None:

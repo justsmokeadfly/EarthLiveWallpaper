@@ -1,4 +1,4 @@
-"""Persistent favorites for NASA and James Webb photos."""
+"""Persistent local favorite photo source URLs."""
 from __future__ import annotations
 
 from pathlib import Path
