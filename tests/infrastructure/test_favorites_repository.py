@@ -1,4 +1,4 @@
-"""Tests for persistent NASA and James Webb favorites."""
+"""Tests for persistent local favorite photo source URLs."""
 from __future__ import annotations
 
 from pathlib import Path
