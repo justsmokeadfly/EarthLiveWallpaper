@@ -17,7 +17,7 @@
 
 ## Установка в Windows
 
-Скачать [EarthLive-Setup-Latest.exe](https://github.com/justsmokeadfly/EarthLiveWallpaper/releases/latest/download/EarthLive-Setup-Latest.exe). Установка Python не требуется. Папка по умолчанию: `C:\Program Files\EarthLive Wallpaper`.
+Скачать [EarthLive-Setup-Latest.exe](https://github.com/justsmokeadfly/EarthLiveWallpaper/releases/latest/download/EarthLive-Setup-Latest.exe). Установка Python не требуется. Папка по умолчанию: `C:\Program Files\EarthLive Wallpaper`. Для работы без установки скачайте Portable ZIP со страницы релиза, распакуйте **весь архив** и запустите `EarthLive.exe` внутри папки. Отдельный EXE без соседней папки `_internal` не работает.
 
 Для NASA APOD можно указать личный бесплатный ключ с [api.nasa.gov](https://api.nasa.gov/) в настройках. Общий DEMO_KEY ограничен по числу запросов.
 

@@ -37,6 +37,17 @@ jobs:
         run: |
           "RELEASE_VERSION=$($env:RELEASE_TAG.TrimStart('v'))" >> $env:GITHUB_ENV
 
+      - name: Ensure release tag matches application version
+        shell: pwsh
+        run: |
+          $project = Get-Content "pyproject.toml" -Raw
+          if ($project -notmatch '(?m)^version\s*=\s*"(\d+\.\d+\.\d+)"') {
+            throw "Cannot determine the version in pyproject.toml."
+          }
+          if ($Matches[1] -ne $env:RELEASE_VERSION) {
+            throw "Tag $env:RELEASE_TAG does not match application version $($Matches[1])."
+          }
+
       - name: Set up Python
         uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0  # v7
         with:
@@ -47,9 +58,7 @@ jobs:
         run: python -m pip install -r requirements-dev.txt
 
       - name: Ruff — full repository
-        run: |
-          python -m ruff check . --output-format=concise
-          python -m ruff check . --output-format=concise
+        run: python -m ruff check . --output-format=concise
 
       - name: Ruff — security rules
         run: python -m ruff check . --select S --output-format=concise
@@ -73,6 +82,19 @@ jobs:
           $exe = "dist/EarthLive/EarthLive.exe"
           if (-not (Test-Path $exe)) { throw "EarthLive.exe was not created by PyInstaller." }
           if ((Get-Item $exe).Length -lt 1MB) { throw "EarthLive.exe looks suspiciously small." }
+
+      - name: Smoke-test packaged application
+        shell: pwsh
+        run: |
+          $exe = (Resolve-Path "dist/EarthLive/EarthLive.exe").Path
+          $process = Start-Process -FilePath $exe -ArgumentList "--help" -PassThru
+          if (-not $process.WaitForExit(30000)) {
+            $process.Kill()
+            throw "Packaged application timed out during --help smoke test."
+          }
+          if ($process.ExitCode -ne 0) {
+            throw "Packaged application exited with code $($process.ExitCode)."
+          }
 
       - name: Create portable ZIP
         shell: pwsh
@@ -132,13 +154,12 @@ jobs:
             ### Windows downloads
             - `EarthLive-Setup-${{ env.RELEASE_VERSION }}.exe` — Windows Installer
             - `EarthLive-Setup-Latest.exe` — Installer stable filename
-            - `EarthLive-${{ env.RELEASE_VERSION }}-windows-x64-portable.zip` — Portable version
+            - `EarthLive-${{ env.RELEASE_VERSION }}-windows-x64-portable.zip` — Complete portable folder (extract the entire ZIP including `_internal`; the EXE alone is not standalone)
 
             ### Validation
             Ruff, mypy, pytest, PyInstaller and Inno Setup checks run before publishing.
             Windows binaries are currently unsigned.
           files: |
-            dist/EarthLive/EarthLive.exe
             EarthLive-${{ env.RELEASE_VERSION }}-windows-x64-portable.zip
             installer/output/EarthLive-Setup-${{ env.RELEASE_VERSION }}.exe
             installer/output/EarthLive-Setup-Latest.exe

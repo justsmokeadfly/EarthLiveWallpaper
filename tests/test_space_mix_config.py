@@ -1,4 +1,4 @@
-"""Tests for Cosmic Mix configuration persistence and validation."""
+"""Tests for NASA APOD automatic wallpaper config and release consistency."""
 
 from __future__ import annotations
 
@@ -60,3 +60,15 @@ def test_app_installer_and_downloader_versions_match() -> None:
 
     assert version == about == installer
     assert f"EarthLiveWallpaper/{version}" in downloader
+
+
+def test_onedir_release_is_published_as_complete_zip() -> None:
+    root = Path(__file__).resolve().parents[1]
+    spec = (root / "EarthLive.spec").read_text(encoding="utf-8")
+    workflow = (root / ".github" / "workflows" / "release.yml").read_text(
+        encoding="utf-8"
+    )
+    assert "coll = COLLECT(" in spec
+    assert "            dist/EarthLive/EarthLive.exe\n" not in workflow
+    assert 'EarthLive-${{ env.RELEASE_VERSION }}-windows-x64-portable.zip' in workflow
+    assert "Smoke-test packaged application" in workflow
