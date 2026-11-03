@@ -17,7 +17,7 @@ Windows desktop wallpaper application with live Himawari satellite imagery and N
 
 ## Windows installation
 
-Download [EarthLive-Setup-Latest.exe](https://github.com/justsmokeadfly/EarthLiveWallpaper/releases/latest/download/EarthLive-Setup-Latest.exe). No local Python installation is required. Installer default: `C:\Program Files\EarthLive Wallpaper`.
+Download [EarthLive-Setup-Latest.exe](https://github.com/justsmokeadfly/EarthLiveWallpaper/releases/latest/download/EarthLive-Setup-Latest.exe). No local Python installation is required. Installer default: `C:\Program Files\EarthLive Wallpaper`. Alternatively, use the complete portable ZIP from Releases: extract the entire archive and run `EarthLive.exe` inside the extracted folder. The EXE requires its adjacent `_internal` directory and is not a standalone executable.
 
 For NASA APOD, an optional free personal key from [api.nasa.gov](https://api.nasa.gov/) can be entered in Settings; the shared DEMO_KEY is rate-limited.
 
