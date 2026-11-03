@@ -41,11 +41,13 @@ jobs:
         shell: pwsh
         run: |
           $project = Get-Content "pyproject.toml" -Raw
-          if ($project -notmatch '(?m)^version\s*=\s*"(\d+\.\d+\.\d+)"') {
+          if ($project -match '(?m)^version\s*=\s*"(\d+\.\d+\.\d+)"') {
+            $projectVersion = $Matches[1]
+          } else {
             throw "Cannot determine the version in pyproject.toml."
           }
-          if ($Matches[1] -ne $env:RELEASE_VERSION) {
-            throw "Tag $env:RELEASE_TAG does not match application version $($Matches[1])."
+          if ($projectVersion -ne $env:RELEASE_VERSION) {
+            throw "Tag $env:RELEASE_TAG does not match application version $projectVersion."
           }
 
       - name: Set up Python
